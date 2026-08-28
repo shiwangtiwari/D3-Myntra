@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["file:///Users/shiwangtiwari/Documents/Assignment/myntra-mvp/src/app/globals.css"],"sourcesContent":["*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }\nhtml, body {\n  font-family: -apple-system, BlinkMacSystemFont, \"SF Pro Text\", \"Segoe UI\", sans-serif;\n  background: #F2F2F7;\n  min-height: 100vh;\n  -webkit-font-smoothing: antialiased;\n}\n:root {\n  --pink: #FF3F6C;\n  --pink-light: rgba(255,63,108,0.08);\n  --green: #03A685;\n  --orange: #FF6161;\n  --charcoal: #282C3F;\n  --grey: #535766;\n  --grey-light: #7E818C;\n  --border: #EAEAEC;\n  --bg: #F0F0F0;\n  --express: #FF3F6C;\n  --teal: #00B5A5;\n}\n"],"names":[],"mappings":"AAAA;;;;;;AACA;;;;;;;AAMA"}}]
+}

@@ -1,0 +1,11 @@
+export const pink   = "#FF3F6C";
+export const pinkLt = "#FFF4F7";
+export const pinkBd = "#FFCED8";
+export const green  = "#03A685";
+export const orange = "#FF6161";
+export const amber  = "#F5A623";
+export const ink    = "#282C3F";
+export const grey   = "#535766";
+export const greyLt = "#7E818C";
+export const border = "#EAEAEC";
+export const bg     = "#F0F0F0";

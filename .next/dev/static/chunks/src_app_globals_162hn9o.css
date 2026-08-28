@@ -1,0 +1,29 @@
+/* [project]/src/app/globals.css [app-client] (css) */
+*, :before, :after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  -webkit-font-smoothing: antialiased;
+  background: #f2f2f7;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, SF Pro Text, Segoe UI, sans-serif;
+}
+
+:root {
+  --pink: #ff3f6c;
+  --pink-light: #ff3f6c14;
+  --green: #03a685;
+  --orange: #ff6161;
+  --charcoal: #282c3f;
+  --grey: #535766;
+  --grey-light: #7e818c;
+  --border: #eaeaec;
+  --bg: #f0f0f0;
+  --express: #ff3f6c;
+  --teal: #00b5a5;
+}
+
+/*# sourceMappingURL=src_app_globals_162hn9o.css.map*/
