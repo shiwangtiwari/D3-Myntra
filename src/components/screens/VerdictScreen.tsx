@@ -4,6 +4,19 @@ import { Product } from "../../data/products";
 import PhoneShell from "../PhoneShell";
 import { pink, pinkLt, pinkBd, green, ink, grey, greyLt, border } from "../../constants/colors";
 
+const btnCSS = `
+@keyframes askSpin { to { transform: rotate(360deg); } }
+.ask-spinner {
+  width: 13px; height: 13px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: askSpin 0.65s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+`;
+
 type Props = {
   prod: Product;
   q: string;
@@ -21,6 +34,7 @@ export default function VerdictScreen({ prod, q, ans, busy, onBack, onSetQ, onAs
 
   return (
     <PhoneShell screen="verdict">
+      <style>{btnCSS}</style>
       <div style={{ flex: 1, position: "relative", overflow: "hidden", height: "100%" }}>
         <img src={prod.imgs[0]} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.35)" }} />
 
@@ -30,6 +44,7 @@ export default function VerdictScreen({ prod, q, ans, busy, onBack, onSetQ, onAs
           <div style={{ display: "flex", justifyContent: "center", paddingTop: 10, paddingBottom: 6 }}>
             <div style={{ width: 34, height: 4, borderRadius: 2, background: "#D4D5D9" }} />
           </div>
+
 
           {/* Product header */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 16px 12px", borderBottom: `1px solid ${border}` }}>
@@ -60,26 +75,28 @@ export default function VerdictScreen({ prod, q, ans, busy, onBack, onSetQ, onAs
 
             {/* Ask */}
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: ink, marginBottom: 8 }}>Ask about this item</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: ink, marginBottom: 4 }}>Ask anything about this item</div>
+              <div style={{ fontSize: 11, color: greyLt, marginBottom: 8 }}>Ask about fit, fabric, occasions, styling — anything on your mind.</div>
               <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                 <input
                   ref={ref}
                   value={q}
                   onChange={e => onSetQ(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && onAsk()}
-                  placeholder="e.g. Will this work for office casual?"
+                  placeholder="e.g. Will this work for a beach holiday?"
                   style={{ flex: 1, padding: "9px 12px", border: `1px solid ${border}`, borderRadius: 6, fontSize: 12, color: ink, outline: "none", fontFamily: "inherit" }}
                 />
-                <button onClick={onAsk} disabled={!q.trim() || busy} style={{ padding: "9px 14px", background: (!q.trim() || busy) ? "#D4D5D9" : pink, color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: (!q.trim() || busy) ? "default" : "pointer", fontFamily: "inherit" }}>
-                  {busy ? "..." : "Ask"}
+                <button onClick={onAsk} disabled={!q.trim() || busy} style={{ padding: "9px 14px", minWidth: 52, background: busy ? green : (!q.trim() ? "#D4D5D9" : pink), color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: (!q.trim() || busy) ? "default" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, transition: "background 0.2s" }}>
+                  {busy ? <span className="ask-spinner" /> : "Ask"}
                 </button>
               </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 10, color: greyLt, fontStyle: "italic" }}>Try:</span>
                 {["Does it run large?", "Office or casual?", "Good for summer?"].map(c => (
                   <button key={c} onClick={() => { onSetQ(c); }} style={{ padding: "4px 10px", border: `1px solid ${pinkBd}`, borderRadius: 20, fontSize: 11, color: pink, background: pinkLt, cursor: "pointer", fontFamily: "inherit" }}>{c}</button>
                 ))}
               </div>
-              {ans && (
+              {ans && !busy && (
                 <div style={{ marginTop: 10, padding: "10px 12px", background: "#F0FDF8", border: "1px solid #A7F3D0", borderRadius: 8 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: green, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>AI Answer from buyer reviews</div>
                   <p style={{ fontSize: 13, color: ink, lineHeight: 1.6, margin: 0 }}>{ans}</p>
