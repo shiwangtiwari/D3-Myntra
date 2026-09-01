@@ -13,7 +13,7 @@ const NAV_LINKS = [
   { href: "/rice", label: "RICE Score" },
   { href: "/guesstimate", label: "Guesstimate" },
   { href: "/how-it-works", label: "How It Works" },
-  { href: "/promo", label: "Promo" },
+  { href: "/promo2", label: "Promo" },
 ];
 
 export default function ArtifactNav() {
