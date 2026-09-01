@@ -149,7 +149,7 @@ export default function HowItWorks() {
         <SectionLabel>01 · The problem</SectionLabel>
         <SectionHeading>Why wishlisted items die</SectionHeading>
         <SectionSubtitle>
-          65% of Myntra wishlist users leave the app to find answers before deciding — YouTube reviews, Amazon comparisons, WhatsApp friends. Every exit is a purchase Myntra does not get. The Wishlist Confidence Engine closes that loop before the user leaves.
+          65% of Myntra wishlist users leave the app to find answers before deciding. They go to YouTube reviews, Amazon comparisons, WhatsApp friends. Every exit is a purchase Myntra does not get. The Wishlist Confidence Engine closes that loop before the user leaves.
         </SectionSubtitle>
 
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14, marginBottom:28 }}>
@@ -167,7 +167,7 @@ export default function HowItWorks() {
 
         <InfoCard
           title="The insight that drives the solution"
-          body="Users who return to their wishlist already intend to buy. They stall not because of price — but because the product page cannot answer whether the item will actually work for them. The solution is information, not incentive."
+          body="Users who return to their wishlist already intend to buy. They stall not because of price, but because the product page cannot answer whether the item will actually work for them. The solution is information, not incentive."
           accent={GREEN}
         />
 
@@ -185,14 +185,14 @@ export default function HowItWorks() {
             <div style={{ fontFamily:FONT, fontSize:11, fontWeight:700, color:PINK, textTransform:"uppercase" as const, letterSpacing:"0.07em", marginBottom:10 }}>Component A</div>
             <div style={{ fontFamily:FONT, fontSize:18, fontWeight:800, color:CHARCOAL, marginBottom:10 }}>Wishlist Strip</div>
             <p style={{ fontFamily:FONT, fontSize:13, color:GREY, lineHeight:1.65, margin:0 }}>
-              An always-on home screen strip that surfaces the highest-priority wishlisted item on every app open. Fires before the user navigates anywhere. Serves the 28.3% who save and never return — a segment every alternative solution misses entirely.
+              An always-on home screen strip that surfaces the highest-priority wishlisted item on every app open. Fires before the user navigates anywhere. Serves the 28.3% who save and never return. Every alternative solution misses this segment entirely.
             </p>
           </div>
           <div style={{ background:WHITE, border:`2px solid ${GREEN}`, borderRadius:14, padding:"22px 22px" }}>
             <div style={{ fontFamily:FONT, fontSize:11, fontWeight:700, color:GREEN, textTransform:"uppercase" as const, letterSpacing:"0.07em", marginBottom:10 }}>Component B</div>
             <div style={{ fontFamily:FONT, fontSize:18, fontWeight:800, color:CHARCOAL, marginBottom:10 }}>Confidence Engine</div>
             <p style={{ fontFamily:FONT, fontSize:13, color:GREY, lineHeight:1.65, margin:0 }}>
-              An AI verdict on every wishlist card, distilled from real buyer reviews. Answers the question the user was going to find on YouTube. Includes an Ask panel powered by the Claude API — typed questions answered from the review corpus in seconds.
+              An AI verdict on every wishlist card, distilled from real buyer reviews. Answers the question the user was going to find on YouTube. Includes an Ask panel powered by the Claude API. Typed questions get answers drawn from the review corpus in seconds.
             </p>
           </div>
         </div>
@@ -209,36 +209,36 @@ export default function HowItWorks() {
         <div style={{ background:WHITE, border:`1px solid ${BORDER}`, borderRadius:14, padding:"32px 28px", marginBottom:28 }}>
           <StepCard
             num={1}
-            title="Open the app — the strip finds you"
-            body="The Wishlist Strip fires on the home screen on every app open. The user sees the highest-priority wishlisted item immediately — brand name, a social signal (74 buyers your size bought this since you saved it), and a chevron to tap. No navigation to the wishlist page required."
+            title="Open the app. The strip finds you."
+            body="The Wishlist Strip fires on the home screen on every app open. The user sees the highest-priority wishlisted item immediately: brand name, a social signal (74 buyers your size bought this since you saved it), and a chevron to tap. No navigation to the wishlist page required."
             screen="Home screen · Wishlist Strip"
-            annotation="Component A fires. The strip shows the item with the strongest purchase signal — ranked by recency saved, buyer volume, and size match."
+            annotation="Component A fires. The strip shows the item with the strongest purchase signal, ranked by recency saved, buyer volume, and size match."
           />
           <StepCard
             num={2}
-            title="Tap the strip — open the Confidence Engine"
-            body="One tap on the strip opens the Verdict bottom sheet directly on that item. The user does not visit the product detail page. The Confidence Engine is the destination — it already contains everything needed to decide."
+            title="Tap the strip to open the Confidence Engine"
+            body="One tap on the strip opens the Verdict bottom sheet directly on that item. The user does not visit the product detail page. The Confidence Engine is the destination. It already contains everything needed to decide."
             screen="Verdict bottom sheet · AI Buyer Verdict"
-            annotation="Component B activates. The Claude API has already synthesised 2,083 reviews into one paragraph. The verdict loads in under 2 seconds."
+            annotation="Component B activates. The Claude API synthesises 2,083 reviews into one paragraph. The verdict loads in under 2 seconds."
           />
           <StepCard
             num={3}
             title="Read the AI verdict"
-            body="The verdict answers the questions that cause abandonment: fit, fabric, sizing, durability. Two sentences. Sourced from real buyer reviews. Buyer photos appear below — not stock images, not brand shots. Real people who bought the item."
+            body="The verdict answers the questions that cause abandonment: fit, fabric, sizing, durability. Two sentences. Sourced from real buyer reviews. Buyer photos appear below. Not stock images, not brand shots. Real people who bought the item."
             screen="AI Buyer Verdict · 2,083 reviews"
-            annotation='"Buyers say: runs true to size. Lighter than photos — breathes well in summer heat." Based on 2,083 reviews.'
+            annotation='"Buyers say: runs true to size. Lighter than photos, breathes well in summer heat." Based on 2,083 reviews.'
           />
           <StepCard
             num={4}
             title="Ask your specific question"
-            body="If the verdict doesn't answer the user's exact concern, the Ask panel lets them type any question. The answer is generated from the review corpus — not a generic FAQ. 'Will this work for office?' gets a specific, evidence-backed answer from buyers who wore it to formal settings."
+            body="If the verdict doesn't answer the user's exact concern, the Ask panel lets them type any question. The answer is generated from the review corpus, not a generic FAQ. 'Will this work for office?' gets a specific, evidence-backed answer from buyers who wore it to formal settings."
             screen="Ask panel · Claude API"
-            annotation='"Will this work for office?" → "Yes — 68% of buyers in formal settings kept it."'
+            annotation='"Will this work for office?" Answer: "Yes. 68% of buyers in formal settings kept it."'
           />
           <StepCard
             num={5}
-            title="Add to Bag — the loop closes"
-            body="Decision made. One tap. The item moves from wishlist to bag. The strip disappears for this session. The metric moves: a wishlisted item that was going to be abandoned has been purchased. No discount. No price alert. Information alone closed the loop."
+            title="Add to Bag. The loop closes."
+            body="Decision made. One tap. The item moves from wishlist to bag. The strip disappears for this session. The north star metric moves. A wishlisted item that was going to be abandoned has been purchased. No discount. No price alert. Information alone closed the loop."
             screen="Size selector · Add to Bag"
             annotation="The north star metric moves: % of users who purchase at least one wishlisted item within 30 days of adding it."
             isLast
@@ -247,7 +247,7 @@ export default function HowItWorks() {
 
         <InfoCard
           title="Why this is not a wishlist reminder"
-          body="A reminder tells the user something they already know — that they saved an item. The strip does something different: it tells the user something they did not know — that 74 buyers their size bought the item since they saved it. That is new information. New information changes decisions. Reminders do not."
+          body="A reminder tells the user something they already know: they saved an item. The strip tells the user something they did not know: 74 buyers their size bought the item since they saved it. That is new information. New information changes decisions. Reminders do not."
           accent={PINK}
         />
 
@@ -265,7 +265,7 @@ export default function HowItWorks() {
             { title:"Next.js + Vercel",      body:"App Router, server components, API routes. Deployed on Vercel. Zero configuration required to run." },
             { title:"Claude Haiku API",       body:"Server-side API route at /api/verdict. The browser never sees the API key. Same architecture any production feature would use." },
             { title:"Myntra design system",   body:"Pink #FF3F6C, Charcoal #282C3F, DM Sans font. Every screen pixel-matched to the real Myntra app using the actual product images from Shiwang's wishlist." },
-            { title:"No video file",          body:"The promo at /promo is a 50-second animation built entirely in React using requestAnimationFrame. No screen recording. No video codec. 60fps in the browser." },
+            { title:"The promo is written as code, not recorded as a video", body:"Most project promos are Loom screen recordings exported to MP4. This promo is a webpage. Every transition, every animation, every timed beat is written in React, the same language used to build the app itself. There is no video file, no editing software, no export step. Open /promo2 in any browser and it plays live at 60 frames per second. This is significantly harder to build than pressing record, and it means the promo can never have a broken embed or a buffering screen." },
           ].map(c => (
             <div key={c.title} style={{ background:WHITE, border:`1px solid ${BORDER}`, borderRadius:10, padding:"18px 20px" }}>
               <p style={{ fontFamily:FONT, fontWeight:700, fontSize:13, color:CHARCOAL, marginBottom:6 }}>{c.title}</p>
@@ -276,7 +276,7 @@ export default function HowItWorks() {
 
         <InfoCard
           title="What was deliberately not built"
-          body="Authentication, persistent cart, payment processing, real inventory APIs. An MVP tests the riskiest assumption — will a user engage with an AI verdict and act on it? Everything that does not test that assumption was left out."
+          body="Authentication, persistent cart, payment processing, real inventory APIs. An MVP tests the riskiest assumption: will a user engage with an AI verdict and act on it? Everything that does not test that assumption was left out."
           accent={GREEN}
         />
 
@@ -290,8 +290,7 @@ export default function HowItWorks() {
         </SectionSubtitle>
 
         <AssetLink href="/" label="Wishlist Confidence Engine · Live MVP" desc="The full interactive prototype. Home screen strip, verdict sheet, Ask panel, Add to Bag." />
-        <AssetLink href="/promo" label="Feature Promo · 50 seconds" desc="Product story built in React. No video file. No screen recording." />
-        <AssetLink href="/promo2" label="Feature Promo Extended · 66 seconds" desc="Same promo with user journey walkthrough and all 5 screens fanned out." />
+        <AssetLink href="/promo2" label="Feature Promo" desc="Product story built as code in React. User journey walkthrough. All 5 screens fanned out at the end." />
         <AssetLink href="/rice" label="RICE Prioritisation" desc="Three solutions evaluated. Winner: 121.5. Runner-up: 78.4. Third: 52.5." />
         <AssetLink href="/guesstimate" label="Guesstimate Model" desc="Rs 20.16 Cr monthly incremental GMV. Every input color-coded by source." />
         <AssetLink href="https://d2-myntra-seven.vercel.app" label="D2 Discovery Engine" desc="1,458 signals processed. 355 relevant. Inter-coder agreement disclosed." />
