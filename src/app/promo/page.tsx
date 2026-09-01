@@ -403,7 +403,7 @@ function ZoomWord({ word, sub, t: ct, startAt, endAt, color = CHARCOAL, accent =
   word: string; sub?: string; t: number; startAt: number; endAt: number; color?: string; accent?: string; bg?: string;
 }) {
   const prog = eo(p(ct, startAt, endAt));
-  const scale = lr(5.5, 1, prog);
+  const scale = lr(2.8, 1, prog);
   const opacity = prog < 0.08 ? prog / 0.08 : 1;
   return (
     <div style={{ position:"absolute", inset:0, background:bg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
@@ -472,11 +472,12 @@ export default function PromoPage() {
   let phoneScreen: "home" | "wishlist" | "verdict" | "verdict-ask" = "home";
 
   if (phaseA) {
-    phoneLeft = "50%"; phoneTop = `${50 + lr(15,0,pA)}%`;
+    // Phone zooms in AND slides left simultaneously — arrives at left:30% as zoom completes
+    phoneLeft = `${lr(50, 30, pA)}%`; phoneTop = `${50 + lr(10,0,pA)}%`;
     phoneScale = lr(0.06, 1, pA); phoneOpacity = pA;
     phoneScreen = "home";
   } else if (phaseB) {
-    phoneLeft = `${lr(50, 30, pB)}%`; phoneTop = "50%";
+    phoneLeft = "30%"; phoneTop = "50%";
     phoneOpacity = pBx > 0 ? (1 - pBx) : 1; phoneScale = 1;
     phoneScreen = "home";
   } else if (phaseC) {
@@ -501,7 +502,7 @@ export default function PromoPage() {
   // ── Pre-start screen ──────────────────────────────────────────────────
   if (!started) return (
     <div style={{ width:"100vw", height:"100vh", background:CHARCOAL, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:32, fontFamily:FONT, userSelect:"none", textAlign:"center", padding:24 }}>
-      <img src="/myntra-logo.png" alt="Myntra" style={{ height:44, objectFit:"contain" }}/>
+      <img src="/myntra-logo.png" alt="Myntra" style={{ height:44, objectFit:"contain", filter:"brightness(0) invert(1)" }}/>
       <div>
         <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.4)", letterSpacing:3, textTransform:"uppercase", marginBottom:16 }}>
           Wishlist Confidence Engine · NextLeap PM Fellowship 2026
