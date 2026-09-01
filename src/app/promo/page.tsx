@@ -71,20 +71,45 @@ function PortraitHint() {
   );
 }
 
-// ── useAnimTime — RAF loop, no audio ─────────────────────────────────────────
+// ── useAnimTime — RAF loop + audio (exact Blinkit pattern) ───────────────────
 function useAnimTime() {
   const [t, setT]  = useState(0);
   const raf        = useRef<number | null>(null);
   const startRef   = useRef<number | null>(null);
   const running    = useRef(false);
+  const audioRef   = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const audio = new Audio("/the_mountain-product-tech-310134.mp3");
+    audio.preload = "auto";
+    audio.volume = 0.85;
+    audio.loop = false;
+    audioRef.current = audio;
+    return () => { audio.pause(); audio.src = ""; };
+  }, []);
 
   const play = useCallback(() => {
     if (running.current) return;
     running.current = true;
     startRef.current = performance.now();
+    // Must call .play() synchronously inside onClick for browser autoplay permission
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.volume = 0.85;
+      const promise = audioRef.current.play();
+      if (promise) promise.catch(() => {
+        setTimeout(() => {
+          if (audioRef.current) { audioRef.current.currentTime = 0; audioRef.current.play().catch(() => {}); }
+        }, 100);
+      });
+    }
     function tick(now: number) {
       const el = (now - (startRef.current ?? now)) / 1000;
-      if (el >= TOTAL) { setT(TOTAL); running.current = false; return; }
+      if (el >= TOTAL) {
+        setT(TOTAL); running.current = false;
+        if (audioRef.current) audioRef.current.pause();
+        return;
+      }
       setT(el);
       raf.current = requestAnimationFrame(tick);
     }
@@ -95,6 +120,7 @@ function useAnimTime() {
     if (raf.current) cancelAnimationFrame(raf.current);
     running.current = false;
     setT(0);
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.currentTime = 0; }
   }, []);
 
   useEffect(() => () => { if (raf.current) cancelAnimationFrame(raf.current); }, []);
@@ -486,7 +512,7 @@ export default function PromoPage() {
       <button onClick={handleStart} style={{ background:PINK, border:"none", borderRadius:50, color:"#fff", fontSize:16, fontWeight:700, padding:"15px 44px", cursor:"pointer", fontFamily:FONT }}>
         Watch the promo
       </button>
-      <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)" }}>50 seconds · no audio</div>
+      <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)" }}>50 seconds · with audio</div>
     </div>
   );
 
@@ -506,9 +532,12 @@ export default function PromoPage() {
 
   return (
     <div style={{
-      width:"100vw", height:"100vh", background:"#0A0A14",
+      width:"100vw", height:"100vh",
+      // Outer wrapper always matches the current canvas bg — eliminates black bars
+      background: bg,
       overflow:"hidden", position:"relative",
       display:"flex", alignItems:"center", justifyContent:"center",
+      transition: "background 0.4s",
     }}>
       {portrait && <PortraitHint/>}
       {/* ── Scaled canvas ──────────────────────────────────────────────── */}
@@ -557,20 +586,20 @@ export default function PromoPage() {
         )}
 
         {/* ── BEATS 11-21: Dark, phone left + text right ────────────────── */}
-        {/* B6: 11-16 phone intro center */}
-        {t > 11 && t <= 16 && (
-          <div style={{ position:"absolute", left:"52%", top:"50%", transform:"translateY(-50%)", maxWidth:"42%", zIndex:3 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:accentTxt, letterSpacing:3, textTransform:"uppercase", marginBottom:14, opacity:fade(13.5,14.5), ...slideR(13.5,14.5) }}>The feature</div>
-            <div style={{ fontSize:68, fontWeight:900, color:mainTxt, letterSpacing:-3, lineHeight:1.1, marginBottom:16, opacity:fade(13.5,14.8), ...slideR(13.5,14.8) }}>
+        {/* B6: phone zooms in 11-13.5, text only reveals at 14 once phone has slid left */}
+        {t > 14 && t <= 16 && (
+          <div style={{ position:"absolute", left:"54%", top:"50%", transform:"translateY(-50%)", maxWidth:"42%", zIndex:3 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:accentTxt, letterSpacing:3, textTransform:"uppercase", marginBottom:14, opacity:fade(14,14.8), ...slideR(14,14.8) }}>The feature</div>
+            <div style={{ fontSize:68, fontWeight:900, color:mainTxt, letterSpacing:-3, lineHeight:1.1, marginBottom:16, opacity:fade(14,15.2), ...slideR(14,15.2) }}>
               The strip<br/>finds you.
             </div>
-            <div style={{ fontSize:24, color:dimTxt, lineHeight:1.6, opacity:fade(14.8,16) }}>Home screen. Every app open.<br/>No wishlist visit needed.</div>
+            <div style={{ fontSize:24, color:dimTxt, lineHeight:1.6, opacity:fade(15.2,16) }}>Home screen. Every app open.<br/>No wishlist visit needed.</div>
           </div>
         )}
 
         {/* B7: 16-21 phone left, text right */}
         {t > 16 && t <= 21 && (
-          <div style={{ position:"absolute", left:"52%", top:"50%", transform:"translateY(-50%)", maxWidth:"42%", zIndex:3 }}>
+          <div style={{ position:"absolute", left:"54%", top:"50%", transform:"translateY(-50%)", maxWidth:"42%", zIndex:3 }}>
             <div style={{ fontSize:13, fontWeight:700, color:accentTxt, letterSpacing:3, textTransform:"uppercase", marginBottom:14, opacity:fade(16.5,17.5), ...slideR(16.5,17.5) }}>Always-on</div>
             <div style={{ fontSize:68, fontWeight:900, color:mainTxt, letterSpacing:-3, lineHeight:1.1, marginBottom:12, opacity:fade(16.5,17.8), ...slideR(16.5,17.8) }}>
               28.3% save<br/>and forget.
