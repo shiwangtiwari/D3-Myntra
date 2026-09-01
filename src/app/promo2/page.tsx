@@ -371,7 +371,7 @@ function VerdictSheet({ showAsk }: { showAsk?: boolean }) {
                 <div style={{ fontSize:10, fontWeight:700, color:GREEN, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.05em" }}>AI Answer from buyer reviews</div>
                 <div style={{ fontSize:12, color:GREY, marginBottom:6, fontStyle:"italic" }}>Will this work for office?</div>
                 <p style={{ fontSize:13, color:CHARCOAL, lineHeight:1.6, margin:0 }}>
-                  Yes — 68% of buyers wore this to formal settings and kept it. Pair with trousers for a polished look.
+                  Yes. 68% of buyers in formal settings kept it. Pair with trousers for a polished look.
                 </p>
               </div>
             )}
@@ -652,7 +652,7 @@ export default function PromoPage() {
                 <div style={{ width:3, background:GREEN, borderRadius:2, alignSelf:"stretch" }}/>
                 <div>
                   <div style={{ fontSize:13, color:dimTxt, marginBottom:4, fontStyle:"italic" }}>Will this work for office?</div>
-                  <div style={{ fontSize:15, fontWeight:600, color:GREEN, lineHeight:1.5 }}>Yes — 68% of buyers in formal settings kept it.</div>
+                  <div style={{ fontSize:15, fontWeight:600, color:GREEN, lineHeight:1.5 }}>Yes. 68% of buyers in formal settings kept it.</div>
                 </div>
               </div>
             </div>
@@ -671,7 +671,7 @@ export default function PromoPage() {
                 5 taps.<br/>Zero<br/>confusion.
               </div>
               <div style={{ fontSize:18, color:GREY, lineHeight:1.6, opacity:eo(p(t,45.4,46.2)) }}>
-                From app open to<br/>Add to Bag — without<br/>ever leaving Myntra.
+                From app open to<br/>Add to Bag, without<br/>ever leaving Myntra.
               </div>
             </div>
             {/* Right: steps */}
@@ -680,7 +680,7 @@ export default function PromoPage() {
                 { n:1, title:"Open the app",       body:"The Wishlist Strip surfaces your highest-priority saved item on the home screen. No navigation needed.",           delay:45.0 },
                 { n:2, title:"See the strip",       body:"74 buyers your size bought this since you saved it. One line. Enough signal to act.",                             delay:45.8 },
                 { n:3, title:"Read the AI verdict", body:"2,083 reviews distilled into one paragraph. Runs true to size. Breathes well. No tab-switching.",                 delay:46.6 },
-                { n:4, title:"Ask your question",   body:"Will this work for office? Yes — 68% of buyers in formal settings kept it. Answered inside Myntra.",              delay:47.4 },
+                { n:4, title:"Ask your question",   body:"Will this work for office? Yes. 68% of buyers in formal settings kept it. Answered inside Myntra.",              delay:47.4 },
                 { n:5, title:"Add to Bag",          body:"Decision made. One tap. The item moves from wishlist to bag. The loop closes.",                                   delay:48.2 },
               ].map(({ n, title, body, delay }) => (
                 <div key={n} style={{
