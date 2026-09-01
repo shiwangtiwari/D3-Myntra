@@ -287,7 +287,7 @@ function WishlistGrid() {
         <button style={{ background:"none", border:"none", fontSize:20, color:GREY, cursor:"pointer", lineHeight:1 }}>←</button>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:15, fontWeight:700, color:CHARCOAL }}>Wishlist</div>
-          <div style={{ fontSize:11, color:GREY }}>315 items</div>
+          <div style={{ fontSize:11, color:GREY }}>Your wishlist</div>
         </div>
       </div>
       <div style={{ flex:1, overflowY:"auto", background:"#fff" }}>
@@ -435,8 +435,8 @@ export default function PromoPage() {
 
   // ── Background ────────────────────────────────────────────────────────
   let bg: string;
-  if      (t <= 3)   bg = CHARCOAL;
-  else if (t <= 4)   { const q = eio(p(t,3,4));   bg = `rgb(${lr(40,244,q)|0},${lr(43,244,q)|0},${lr(63,244,q)|0})`; }
+  if      (t <= 4.5) bg = CHARCOAL;
+  else if (t <= 5)   { const q = eio(p(t,4.5,5)); bg = `rgb(${lr(40,244,q)|0},${lr(43,244,q)|0},${lr(63,244,q)|0})`; }
   else if (t <= 10)  bg = WHITE;
   else if (t <= 11)  { const q = eio(p(t,10,11)); bg = `rgb(${lr(244,40,q)|0},${lr(244,43,q)|0},${lr(244,63,q)|0})`; }
   else if (t <= 21)  bg = CHARCOAL;
@@ -446,7 +446,7 @@ export default function PromoPage() {
   else if (t <= 44)  bg = CHARCOAL;
   else               bg = PINK;
 
-  const onLight = (t > 4 && t <= 10) || (t > 22 && t <= 34) || t > 44;
+  const onLight = (t > 4.5 && t <= 10) || (t > 22 && t <= 34) || t > 44;
   const mainTxt = onLight ? CHARCOAL : WHITE;
   const dimTxt  = onLight ? GREY : "rgba(255,255,255,0.55)";
   const accentTxt = onLight ? PINK : "#FF8FAB";
@@ -555,14 +555,14 @@ export default function PromoPage() {
       }}>
 
         {/* ── BEAT 1: 0-1s Zoom "Wishlist" ─────────────────────────────── */}
-        {t <= 1 && <ZoomWord word="Wishlist." t={t} startAt={0} endAt={0.8} color={WHITE} bg={CHARCOAL} />}
-        {/* ── BEAT 2: 1-2s Zoom "315 items." ──────────────────────────── */}
-        {t > 1 && t <= 2 && <ZoomWord word="315 items." t={t} startAt={1} endAt={1.8} color={WHITE} bg={CHARCOAL} />}
-        {/* ── BEAT 3: 2-3s "Never purchased." ─────────────────────────── */}
-        {t > 2 && t <= 3 && <ZoomWord word="Never." sub="Most will never be purchased." t={t} startAt={2} endAt={2.8} color={WHITE} accent={PINK} bg={CHARCOAL} />}
+        {t <= 1 && <ZoomWord word="Wishlisted." t={t} startAt={0} endAt={0.8} color={WHITE} bg={CHARCOAL} />}
+        {/* ── BEAT 2: 1-2s ── */}
+        {t > 1 && t <= 2 && <ZoomWord word="Forgotten." t={t} startAt={1} endAt={1.8} color={WHITE} bg={CHARCOAL} />}
+        {/* ── BEAT 3: 2-4.5s — extended hold so sub-text is fully readable ── */}
+        {t > 2 && t <= 4.5 && <ZoomWord word="Never bought." sub="Most wishlisted items are never purchased." t={t} startAt={2} endAt={2.8} color={WHITE} accent={PINK} bg={CHARCOAL} />}
 
         {/* ── BEAT 4-5: 3-10s — Light bg, stat center ──────────────────── */}
-        {t > 4 && t <= 10 && (
+        {t > 4.5 && t <= 10 && (
           <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
             <div style={{ fontSize:13, fontWeight:700, color:PINK, letterSpacing:3, textTransform:"uppercase", marginBottom:20, opacity:fade(4.2,5) }}>The problem</div>
             <div style={{ display:"flex", alignItems:"baseline", gap:8, opacity:fade(4.5,5.8), transform:`scale(${lr(1.4,1,eo(p(t,4.5,5.8)))})` }}>
@@ -616,7 +616,7 @@ export default function PromoPage() {
           <div style={{ position:"absolute", right:"52%", top:"50%", transform:"translateY(-50%)", maxWidth:"42%", zIndex:3 }}>
             <div style={{ fontSize:13, fontWeight:700, color:PINK, letterSpacing:3, textTransform:"uppercase", marginBottom:14, opacity:fade(23.5,24.5), ...slideL(23.5,24.5) }}>The wishlist</div>
             <div style={{ fontSize:68, fontWeight:900, color:CHARCOAL, letterSpacing:-3, lineHeight:1.1, marginBottom:16, opacity:fade(23.5,24.8), ...slideL(23.5,24.8) }}>
-              315 items.<br/>One decision.
+              Your wishlist.<br/>One decision.
             </div>
             <div style={{ fontSize:22, color:GREY, lineHeight:1.6, opacity:fade(25,26) }}>The Confidence Engine reads<br/>2,083 buyer reviews for you.</div>
             <div style={{ fontSize:18, color:PINK, marginTop:14, opacity:fade(26.2,27.2), fontWeight:600 }}>Runs true to size. Breathes well in summer.</div>
