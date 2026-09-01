@@ -6,13 +6,20 @@ const PINK       = "#FF3F6C";
 const CHARCOAL   = "#282C3F";
 const GREEN      = "#03A685";
 const WHITE      = "#FFFFFF";
-const GREY_TEXT  = "#535766";
-const LIGHT_GREY = "#F4F4F5";
+const GREY       = "#535766";
+const BORDER     = "#E9E9EB";
+const BG         = "#F4F4F5";
 const FONT       = "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif";
 
 const TOTAL = 50; // seconds
-const DESIGN_W = 390;
-const DESIGN_H = 844;
+
+// ── Landscape canvas dimensions (1440 × 900 like Blinkit) ────────────────────
+const DW = 1440;
+const DH = 900;
+
+// ── iPhone shell dimensions ───────────────────────────────────────────────────
+const PW = 393;
+const PH = 852;
 
 // ── Easing helpers ────────────────────────────────────────────────────────────
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -24,26 +31,17 @@ const lr = (a: number, b: number, t: number) => a + (b - a) * t;
 
 // ── useViewportScale — copied from Blinkit D3 promo.js exactly ───────────────
 function useViewportScale() {
-  const [scale, setScale]       = useState(1);
-  const [isLandscape, setIsLandscape] = useState(false);
+  const [scale, setScale]     = useState(1);
+  const [portrait, setPortrait] = useState(false);
 
   useEffect(() => {
     function update() {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const landscape = vw > vh;
-      setIsLandscape(landscape);
-
-      if (vw >= DESIGN_W) {
-        // Desktop or wide enough — scale up proportionally, or keep 1
-        const scaleByW = vw >= DESIGN_W ? Math.min(vw / DESIGN_W, vh / DESIGN_H) : vw / DESIGN_W;
-        setScale(Math.min(scaleByW, 2.2)); // cap at 2.2× to avoid massive UI
-        return;
-      }
-      // Narrow mobile — fit to width
-      const scaleByW = vw / DESIGN_W;
-      const scaleByH = vh / DESIGN_H;
-      setScale(Math.min(scaleByW, scaleByH));
+      setPortrait(vh > vw);
+      const byW = vw / DW;
+      const byH = vh / DH;
+      setScale(Math.min(byW, byH));
     }
     update();
     window.addEventListener("resize", update);
@@ -53,77 +51,40 @@ function useViewportScale() {
       window.removeEventListener("orientationchange", update);
     };
   }, []);
-  return { scale, isLandscape };
+  return { scale, portrait };
 }
 
 // ── Portrait/landscape hint ───────────────────────────────────────────────────
-function LandscapeHint() {
+function PortraitHint() {
   return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: 24,
-        left: "50%",
-        transform: "translateX(-50%)",
-        background: "rgba(0,0,0,0.72)",
-        borderRadius: 40,
-        padding: "10px 20px",
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        zIndex: 999,
-        fontFamily: FONT,
-        pointerEvents: "none" as const,
-      }}
-    >
-      <span style={{ fontSize: 20 }}>↺</span>
-      <span style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", whiteSpace: "nowrap" as const }}>
+    <div style={{
+      position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)",
+      background:"rgba(0,0,0,0.72)", borderRadius:40, padding:"10px 20px",
+      display:"flex", alignItems:"center", gap:10, zIndex:999, fontFamily:FONT,
+      pointerEvents:"none",
+    }}>
+      <span style={{ fontSize:20 }}>↺</span>
+      <span style={{ fontSize:13, color:"rgba(255,255,255,0.85)", whiteSpace:"nowrap" }}>
         Rotate for best experience
       </span>
     </div>
   );
 }
 
-// ── Rolling counter helper ────────────────────────────────────────────────────
-function RollingNumber({
-  t,
-  triggerAt,
-  dur,
-  from,
-  to,
-  suffix = "",
-}: {
-  t: number;
-  triggerAt: number;
-  dur: number;
-  from: number;
-  to: number;
-  suffix?: string;
-}) {
-  const progress = eo(p(t, triggerAt, triggerAt + dur));
-  const value = Math.round(lr(from, to, progress));
-  return <>{value.toLocaleString("en-IN")}{suffix}</>;
-}
-
-// ── useAnimTime — requestAnimationFrame loop, no audio ───────────────────────
+// ── useAnimTime — RAF loop, no audio ─────────────────────────────────────────
 function useAnimTime() {
-  const [t, setT]    = useState(0);
-  const raf          = useRef<number | null>(null);
-  const startRef     = useRef<number | null>(null);
-  const running      = useRef(false);
+  const [t, setT]  = useState(0);
+  const raf        = useRef<number | null>(null);
+  const startRef   = useRef<number | null>(null);
+  const running    = useRef(false);
 
   const play = useCallback(() => {
     if (running.current) return;
     running.current = true;
     startRef.current = performance.now();
-
     function tick(now: number) {
       const el = (now - (startRef.current ?? now)) / 1000;
-      if (el >= TOTAL) {
-        setT(TOTAL);
-        running.current = false;
-        return;
-      }
+      if (el >= TOTAL) { setT(TOTAL); running.current = false; return; }
       setT(el);
       raf.current = requestAnimationFrame(tick);
     }
@@ -140,958 +101,575 @@ function useAnimTime() {
   return { t, play, reset };
 }
 
-// ── Wishlist card mini component (used in Act 2 & Act 4) ────────────────────
-function WishlistCard({
-  greyed = false,
-  showSocial = false,
-}: {
-  greyed?: boolean;
-  showSocial?: boolean;
-}) {
-  const fg = greyed ? "#BBBCC0" : CHARCOAL;
-  const sub = greyed ? "#D0D0D5" : GREY_TEXT;
+// ── Inline iPhone shell (no external deps) ───────────────────────────────────
+function IPhone({ children, scl = 1 }: { children: React.ReactNode; scl?: number }) {
   return (
-    <div
-      style={{
-        background: greyed ? "#F0F0F2" : WHITE,
-        borderRadius: 14,
-        padding: "14px",
-        width: 280,
-        boxShadow: greyed ? "none" : "0 4px 20px rgba(0,0,0,0.12)",
-        border: `1px solid ${greyed ? "#E5E5E8" : "#F0F0F0"}`,
-        transition: "background 0.5s, border-color 0.5s",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-        {/* Product image placeholder */}
-        <div
-          style={{
-            width: 64,
-            height: 80,
-            borderRadius: 8,
-            background: greyed ? "#E5E5E8" : "#F4F4F5",
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 28,
-          }}
-        >
-          👕
+    <div style={{
+      width: PW, height: PH,
+      background: "#000",
+      borderRadius: 54,
+      padding: 11,
+      boxShadow: "0 0 0 2px #3a3a3a, 0 0 0 3.5px #111, 0 40px 100px rgba(0,0,0,.5), 0 0 60px rgba(255,63,108,.12)",
+      position: "relative",
+      flexShrink: 0,
+      transform: `scale(${scl})`,
+      transformOrigin: "center center",
+    }}>
+      {/* Dynamic island */}
+      <div style={{ position:"absolute", top:14, left:"50%", transform:"translateX(-50%)", width:118, height:32, background:"#000", borderRadius:20, zIndex:300 }} />
+      {/* Side buttons */}
+      <div style={{ position:"absolute", right:-3, top:140, width:3, height:60, background:"#2a2a2a", borderRadius:"0 2px 2px 0" }} />
+      <div style={{ position:"absolute", left:-3, top:120, width:3, height:30, background:"#2a2a2a", borderRadius:"2px 0 0 2px" }} />
+      <div style={{ position:"absolute", left:-3, top:162, width:3, height:54, background:"#2a2a2a", borderRadius:"2px 0 0 2px" }} />
+      <div style={{ position:"absolute", left:-3, top:224, width:3, height:54, background:"#2a2a2a", borderRadius:"2px 0 0 2px" }} />
+      {/* Screen */}
+      <div style={{ width:"100%", height:"100%", borderRadius:44, overflow:"hidden", background:"#fff", position:"relative", display:"flex", flexDirection:"column" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ── Status bar ────────────────────────────────────────────────────────────────
+function StatusBar({ dark = true }: { dark?: boolean }) {
+  const c = dark ? CHARCOAL : WHITE;
+  return (
+    <div style={{ height:52, display:"flex", alignItems:"flex-end", justifyContent:"space-between", padding:"0 26px 10px", flexShrink:0, position:"relative" }}>
+      <span style={{ fontSize:15, fontWeight:700, color:c }}>9:41</span>
+      <div style={{ position:"absolute", top:10, left:"50%", transform:"translateX(-50%)", width:120, height:34, background:"#000", borderRadius:20 }} />
+      <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+        <div style={{ display:"flex", alignItems:"flex-end", gap:1.5, height:11 }}>
+          {[4,6,8,11].map(h=><div key={h} style={{ width:2.5, height:h, background:c, borderRadius:1 }}/>)}
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: FONT, fontSize: 13, fontWeight: 600, color: fg, marginBottom: 4 }}>
-            OQUENT Casual Shirt
+        <svg width="15" height="11" viewBox="0 0 15 11" fill="none">
+          <path d="M7.5 9.5a1.2 1.2 0 100 2.4 1.2 1.2 0 000-2.4z" fill={c}/>
+          <path d="M4.3 7a4.6 4.6 0 016.4 0" stroke={c} strokeWidth="1.3" strokeLinecap="round"/>
+          <path d="M1.5 4.3A8.6 8.6 0 0113.5 4.3" stroke={c} strokeWidth="1.3" strokeLinecap="round"/>
+        </svg>
+        <div style={{ display:"flex", alignItems:"center", gap:1 }}>
+          <div style={{ width:22, height:11, border:`1.5px solid ${c}`, borderRadius:3, padding:1.5 }}>
+            <div style={{ width:"100%", height:"100%", background:c, borderRadius:1.5 }}/>
           </div>
-          <div style={{ fontFamily: FONT, fontSize: 12, color: sub, marginBottom: 4 }}>
-            Size: M · Blue
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Myntra top nav bar (inside phone) ────────────────────────────────────────
+function MyntraNav() {
+  return (
+    <div style={{ background:"linear-gradient(180deg,#FCE4DA 0%,#FDEEE7 60%,#FFF 100%)", flexShrink:0 }}>
+      <StatusBar />
+      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"2px 14px 10px" }}>
+        <div style={{ flex:1, background:"#fff", borderRadius:24, padding:"9px 14px", display:"flex", alignItems:"center", gap:8, boxShadow:"0 1px 4px rgba(0,0,0,.06)" }}>
+          <img src="/myntra-m.png" alt="" style={{ width:17, height:17, objectFit:"contain" }}/>
+          <span style={{ fontSize:13, color:"#888", flex:1, fontStyle:"italic" }}>"Shirts"</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Bottom nav ────────────────────────────────────────────────────────────────
+function BottomNav({ active }: { active: string }) {
+  const items = [
+    { id:"home", label:"Home", icon:<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M2 9l8-7 8 7v9H13v-5H7v5H2V9z" stroke={active==="home"?PINK:GREY} strokeWidth="1.5" strokeLinejoin="round"/></svg> },
+    { id:"wishlist", label:"Wishlist", icon:<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 17S2 11.5 2 6c0-2.2 1.8-4 4-4 1.5 0 2.8.7 3.6 1.8A4 4 0 0114 2c2.2 0 4 1.8 4 4 0 5.5-8 11-8 11z" stroke={active==="wishlist"?PINK:GREY} strokeWidth="1.5" fill={active==="wishlist"?PINK:"none"}/></svg> },
+    { id:"bag", label:"Bag", icon:<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="6" width="16" height="13" rx="1.5" stroke={active==="bag"?PINK:GREY} strokeWidth="1.5"/><path d="M7 6V5a3 3 0 016 0v1" stroke={active==="bag"?PINK:GREY} strokeWidth="1.5"/></svg> },
+    { id:"profile", label:"Profile", icon:<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3" stroke={active==="profile"?PINK:GREY} strokeWidth="1.5"/><path d="M3 18c0-3.3 3.1-6 7-6s7 2.7 7 6" stroke={active==="profile"?PINK:GREY} strokeWidth="1.5" strokeLinecap="round"/></svg> },
+  ];
+  return (
+    <div style={{ display:"flex", borderTop:`1px solid ${BORDER}`, background:"#fff", flexShrink:0 }}>
+      {items.map(it=>(
+        <div key={it.id} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", padding:"8px 0 10px", gap:3 }}>
+          {it.icon}
+          <span style={{ fontSize:10, color:active===it.id?PINK:GREY, fontFamily:FONT }}>{it.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Screen A: Home with Wishlist Strip (Acts 4–7) ─────────────────────────────
+function HomeWithStrip() {
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100%", fontFamily:FONT }}>
+      <MyntraNav/>
+      {/* Wishlist strip — the hero element */}
+      <div style={{ background:"#fff", padding:"10px 14px 6px", borderBottom:`1px solid ${BORDER}`, flexShrink:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", border:`1.5px solid ${PINK}`, borderRadius:10, background:"#FFF5F7", cursor:"pointer", boxShadow:"0 2px 12px rgba(255,63,108,0.14)" }}>
+          <div style={{ width:42, height:52, borderRadius:6, overflow:"hidden", flexShrink:0, border:`1px solid ${BORDER}` }}>
+            <img src="/products/oquent/card.png" alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"top" }}/>
           </div>
-          <div style={{ fontFamily: FONT, fontSize: 14, fontWeight: 700, color: greyed ? sub : CHARCOAL }}>
-            ₹1,199
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:9.5, fontWeight:700, color:PINK, textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:3 }}>From your wishlist</div>
+            <div style={{ fontSize:12.5, fontWeight:700, color:CHARCOAL, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>OQUENT</div>
+            <div style={{ fontSize:11.5, color:CHARCOAL, lineHeight:1.4 }}>74 buyers your size bought this. Here's what they said.</div>
           </div>
-          {!greyed && (
-            <div style={{ fontFamily: FONT, fontSize: 11, color: "#F97316", marginTop: 4 }}>
-              ❤️ Saved 12 days ago
+          <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke={PINK} strokeWidth="1.6" strokeLinecap="round"/></svg>
+        </div>
+      </div>
+      {/* Scrollable home feed */}
+      <div style={{ flex:1, overflowY:"auto", background:"#fff" }}>
+        <div style={{ display:"flex", gap:0, padding:"12px 14px 8px", borderBottom:`1px solid ${BORDER}` }}>
+          {["ALL","MEN","WOMEN","KIDS"].map((t,i)=>(
+            <div key={t} style={{ paddingBottom:10, paddingRight:20, borderBottom:i===0?`2px solid ${PINK}`:"2px solid transparent", fontSize:12, fontWeight:700, color:i===0?PINK:CHARCOAL }}>{t}</div>
+          ))}
+        </div>
+        <div style={{ display:"flex", gap:12, overflowX:"auto", padding:"12px 14px", scrollbarWidth:"none" }}>
+          {[
+            { src:"/home/cat-fashion.png", label:"Fashion" },
+            { src:"/home/cat-beauty.png", label:"Beauty" },
+            { src:"/home/cat-footwear.png", label:"Footwear" },
+            { src:"/home/cat-accessories.png", label:"Accessories" },
+          ].map(c=>(
+            <div key={c.label} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:5, flexShrink:0, width:60 }}>
+              <div style={{ width:52, height:52, borderRadius:13, overflow:"hidden", background:"#F3E4DC" }}>
+                <img src={c.src} alt={c.label} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+              </div>
+              <span style={{ fontSize:10, color:CHARCOAL, fontWeight:500, whiteSpace:"nowrap" }}>{c.label}</span>
             </div>
-          )}
+          ))}
         </div>
-        {/* Heart */}
-        <div style={{ fontSize: 20, color: greyed ? "#D0D0D5" : PINK, flexShrink: 0 }}>♥</div>
+        <div style={{ padding:"0 14px 12px" }}>
+          <img src="/home/hero-banner.png" alt="" style={{ width:"100%", borderRadius:12, display:"block" }}/>
+        </div>
+        <div style={{ padding:"0 14px 12px" }}>
+          <img src="/home/paylater-banner.png" alt="" style={{ width:"100%", borderRadius:8, display:"block" }}/>
+        </div>
       </div>
-      {greyed && (
-        <div style={{ fontFamily: FONT, fontSize: 11, color: "#C0C0C5", marginTop: 10, textAlign: "center" as const }}>
-          Same information as the day you saved it.
+      <BottomNav active="home"/>
+    </div>
+  );
+}
+
+// ── Screen B: Wishlist grid ───────────────────────────────────────────────────
+function WishlistGrid() {
+  const products = [
+    { img:"/products/oquent/card.png",      brand:"OQUENT",         price:"₹553",  off:"80% OFF", rating:"3.9" },
+    { img:"/products/denimlook/card.png",   brand:"DENIMLOOK",      price:"₹474",  off:"84% OFF", rating:"4.2" },
+    { img:"/products/kooknkeech/card.png",  brand:"Kook N Keech",   price:"₹154",  off:"90% OFF", rating:"4.2" },
+    { img:"/products/pepejeans/card.png",   brand:"Pepe Jeans",     price:"₹2,299",off:"54% OFF", rating:"4.2" },
+    { img:"/products/mastharbour/card.jpg", brand:"Mast & Harbour",  price:"₹310",  off:"84% OFF", rating:"4.0" },
+    { img:"/products/roadster-jacket/card.jpg", brand:"Roadster",   price:"₹545",  off:"58% OFF", rating:"4.1" },
+  ];
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100%", fontFamily:FONT }}>
+      <StatusBar/>
+      <div style={{ display:"flex", alignItems:"center", padding:"0 14px 10px", gap:10, borderBottom:`1px solid ${BORDER}`, background:"#fff", flexShrink:0 }}>
+        <button style={{ background:"none", border:"none", fontSize:20, color:GREY, cursor:"pointer", lineHeight:1 }}>←</button>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:15, fontWeight:700, color:CHARCOAL }}>Wishlist</div>
+          <div style={{ fontSize:11, color:GREY }}>315 items</div>
         </div>
+      </div>
+      <div style={{ flex:1, overflowY:"auto", background:"#fff" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, padding:"12px 12px 16px" }}>
+          {products.map((prod,i)=>(
+            <div key={i}>
+              <div style={{ position:"relative", borderRadius:"8px 8px 0 0", overflow:"hidden", height:190 }}>
+                <img src={prod.img} alt={prod.brand} style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"top" }}/>
+                <div style={{ position:"absolute", bottom:6, left:6, background:"rgba(255,255,255,.95)", borderRadius:20, padding:"2px 7px", fontSize:11, fontWeight:700, color:CHARCOAL }}>
+                  {prod.rating} ★
+                </div>
+                <button style={{ position:"absolute", bottom:6, right:6, background:"#fff", border:`1.5px solid ${PINK}`, borderRadius:20, padding:"4px 10px", fontSize:11, fontWeight:600, color:PINK, cursor:"pointer" }}>
+                  Add
+                </button>
+              </div>
+              <div style={{ paddingTop:5 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:CHARCOAL }}>{prod.brand}</div>
+                <div style={{ display:"flex", alignItems:"baseline", gap:4, marginTop:2 }}>
+                  <span style={{ fontSize:12, fontWeight:700, color:CHARCOAL }}>{prod.price}</span>
+                  <span style={{ fontSize:10, fontWeight:600, color:GREEN }}>{prod.off}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <BottomNav active="wishlist"/>
+    </div>
+  );
+}
+
+// ── Screen C: AI Verdict bottom sheet ─────────────────────────────────────────
+function VerdictSheet({ showAsk }: { showAsk?: boolean }) {
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100%", fontFamily:FONT, position:"relative" }}>
+      <div style={{ flex:1, position:"relative", overflow:"hidden" }}>
+        {/* Background product image */}
+        <img src="/products/oquent/detail.jpg" alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", filter:"brightness(0.38)" }}/>
+        {/* Bottom sheet */}
+        <div style={{ position:"absolute", bottom:0, left:0, right:0, background:"#fff", borderRadius:"18px 18px 0 0", height:"85%", display:"flex", flexDirection:"column", boxShadow:"0 -6px 24px rgba(0,0,0,.18)", zIndex:10 }}>
+          <div style={{ display:"flex", justifyContent:"center", paddingTop:10, paddingBottom:6, flexShrink:0 }}>
+            <div style={{ width:34, height:4, borderRadius:2, background:"#D4D5D9" }}/>
+          </div>
+          {/* Product header */}
+          <div style={{ display:"flex", alignItems:"center", gap:10, padding:"0 16px 12px", borderBottom:`1px solid ${BORDER}`, flexShrink:0 }}>
+            <img src="/products/oquent/card.png" alt="" style={{ width:48, height:62, objectFit:"cover", objectPosition:"top", borderRadius:4, border:`1px solid ${BORDER}` }}/>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:CHARCOAL }}>OQUENT</div>
+              <div style={{ fontSize:11, color:GREY }}>Men Standard Striped Casual Shirt</div>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:2 }}>
+                <span style={{ fontSize:13, fontWeight:700, color:CHARCOAL }}>₹553</span>
+                <span style={{ fontSize:10, color:GREEN, fontWeight:600 }}>80% OFF</span>
+              </div>
+            </div>
+          </div>
+          {/* Content */}
+          <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 16px" }}>
+            {/* AI Verdict */}
+            <div style={{ background:"#FFF5F7", border:`1px solid #FFCED8`, borderRadius:10, padding:"12px 14px", marginBottom:14 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
+                <span style={{ fontSize:12 }}>⭐</span>
+                <span style={{ fontSize:11, fontWeight:700, color:PINK, textTransform:"uppercase", letterSpacing:"0.06em" }}>AI Buyer Verdict</span>
+                <span style={{ marginLeft:"auto", fontSize:10, color:GREY }}>2,083 reviews</span>
+              </div>
+              <p style={{ fontSize:13, color:CHARCOAL, lineHeight:1.65, margin:0 }}>
+                Buyers say this runs one size large. 73% who sized down kept it without returning. The fabric is lighter than photos suggest but breathes well in summer heat.
+              </p>
+            </div>
+            {/* Review photos */}
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:CHARCOAL, marginBottom:8 }}>Buyer photos</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <img src="/products/oquent/reviews.png" alt="" style={{ width:80, height:90, objectFit:"cover", borderRadius:6 }}/>
+                <img src="/products/oquent/review.png" alt="" style={{ width:80, height:90, objectFit:"cover", borderRadius:6 }}/>
+                <img src="/products/oquent/img2.jpg" alt="" style={{ width:80, height:90, objectFit:"cover", borderRadius:6 }}/>
+              </div>
+            </div>
+            {/* Ask panel */}
+            {showAsk && (
+              <div style={{ background:"#F0FDF8", border:`1px solid #A7F3D0`, borderRadius:10, padding:"12px 14px" }}>
+                <div style={{ fontSize:10, fontWeight:700, color:GREEN, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.05em" }}>AI Answer from buyer reviews</div>
+                <div style={{ fontSize:12, color:GREY, marginBottom:6, fontStyle:"italic" }}>Will this work for office?</div>
+                <p style={{ fontSize:13, color:CHARCOAL, lineHeight:1.6, margin:0 }}>
+                  Yes — 68% of buyers wore this to formal settings and kept it. Pair with trousers for a polished look.
+                </p>
+              </div>
+            )}
+            {/* Ask input */}
+            {!showAsk && (
+              <div>
+                <div style={{ fontSize:12, fontWeight:700, color:CHARCOAL, marginBottom:6 }}>Ask anything about this item</div>
+                <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+                  <div style={{ flex:1, padding:"9px 12px", border:`1px solid ${BORDER}`, borderRadius:6, fontSize:12, color:GREY }}>e.g. Does it run large?</div>
+                  <button style={{ padding:"9px 14px", background:PINK, color:"#fff", border:"none", borderRadius:6, fontSize:12, fontWeight:700 }}>Ask</button>
+                </div>
+              </div>
+            )}
+          </div>
+          {/* CTA */}
+          <div style={{ padding:"12px 16px 16px", borderTop:`1px solid ${BORDER}`, background:"#fff", flexShrink:0 }}>
+            <button style={{ width:"100%", padding:"13px 0", background:PINK, color:"#fff", border:"none", borderRadius:6, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:FONT }}>
+              Add to Bag
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── ZoomWord — zoom-in word reveal (like Blinkit) ─────────────────────────────
+function ZoomWord({ word, sub, t: ct, startAt, endAt, color = CHARCOAL, accent = PINK, bg = WHITE }: {
+  word: string; sub?: string; t: number; startAt: number; endAt: number; color?: string; accent?: string; bg?: string;
+}) {
+  const prog = eo(p(ct, startAt, endAt));
+  const scale = lr(5.5, 1, prog);
+  const opacity = prog < 0.08 ? prog / 0.08 : 1;
+  return (
+    <div style={{ position:"absolute", inset:0, background:bg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+      <div style={{ transform:`scale(${scale})`, opacity, fontFamily:FONT, fontSize:160, fontWeight:900, letterSpacing:-6, lineHeight:1, textAlign:"center", whiteSpace:"nowrap", userSelect:"none", color }}>
+        {word}
+      </div>
+      {sub && prog > 0.7 && (
+        <div style={{ fontSize:26, color:accent, fontWeight:700, marginTop:16, opacity:eo(p(prog,0.7,1)) }}>{sub}</div>
       )}
     </div>
   );
 }
 
-// ── Strip card component (Act 4) ──────────────────────────────────────────────
-function StripCard() {
-  return (
-    <div
-      style={{
-        background: WHITE,
-        borderRadius: 14,
-        padding: "14px 16px",
-        width: 300,
-        boxShadow: "0 6px 28px rgba(255,63,108,0.18)",
-        border: `2px solid ${PINK}`,
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-      }}
-    >
-      {/* Myntra M indicator */}
-      <div
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 10,
-          background: PINK,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-          fontFamily: FONT,
-          fontWeight: 900,
-          fontSize: 18,
-          color: WHITE,
-        }}
-      >
-        M
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontFamily: FONT, fontSize: 12, fontWeight: 700, color: CHARCOAL, lineHeight: 1.4 }}>
-          OQUENT Shirt
-        </div>
-        <div style={{ fontFamily: FONT, fontSize: 11, color: GREEN, marginTop: 2, lineHeight: 1.4 }}>
-          74 buyers your size bought this since you saved it
-        </div>
-      </div>
-      <div style={{ fontSize: 18, color: PINK, flexShrink: 0 }}>→</div>
-    </div>
-  );
-}
-
-// ── Confidence Engine bottom sheet (Act 5) ────────────────────────────────────
-function ConfidenceSheet({ askVisible }: { askVisible: boolean }) {
-  return (
-    <div
-      style={{
-        position: "absolute" as const,
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: WHITE,
-        borderRadius: "20px 20px 0 0",
-        padding: "20px 20px 32px",
-        boxShadow: "0 -8px 40px rgba(0,0,0,0.15)",
-      }}
-    >
-      {/* Pull handle */}
-      <div
-        style={{
-          width: 36,
-          height: 4,
-          background: LIGHT_GREY,
-          borderRadius: 2,
-          margin: "0 auto 16px",
-        }}
-      />
-      {/* Product thumbnail + verdict */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
-        <div
-          style={{
-            width: 56,
-            height: 68,
-            borderRadius: 8,
-            background: "#F4F4F5",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 28,
-            flexShrink: 0,
-          }}
-        >
-          👕
-        </div>
-        <div>
-          <div style={{ fontFamily: FONT, fontSize: 13, fontWeight: 700, color: CHARCOAL, marginBottom: 6, lineHeight: 1.4 }}>
-            Buyers say: runs true to size. Lighter than photos — breathes well.
-          </div>
-          <div style={{ fontFamily: FONT, fontSize: 11, color: GREY_TEXT }}>
-            Based on 2,083 reviews
-          </div>
-        </div>
-      </div>
-
-      {/* Ask panel */}
-      {askVisible && (
-        <div
-          style={{
-            background: "#E6F7F3",
-            borderRadius: 12,
-            padding: "12px 14px",
-            marginTop: 8,
-            border: `1px solid ${GREEN}`,
-          }}
-        >
-          <div style={{ fontFamily: FONT, fontSize: 12, color: GREY_TEXT, marginBottom: 6 }}>
-            Will this work for office?
-          </div>
-          <div style={{ fontFamily: FONT, fontSize: 13, fontWeight: 700, color: GREEN, lineHeight: 1.5 }}>
-            Yes — 68% of buyers in formal settings kept it.
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Main promo component ──────────────────────────────────────────────────────
+// ── Main Promo ────────────────────────────────────────────────────────────────
 export default function PromoPage() {
   const { t, play, reset } = useAnimTime();
-  const { scale, isLandscape } = useViewportScale();
+  const { scale, portrait } = useViewportScale();
   const [started, setStarted] = useState(false);
   const [ended,   setEnded]   = useState(false);
 
-  useEffect(() => {
-    if (t >= TOTAL && started) setEnded(true);
-  }, [t, started]);
-
+  useEffect(() => { if (t >= TOTAL && started) setEnded(true); }, [t, started]);
   function handleStart() { setStarted(true); setEnded(false); play(); }
   function handleReplay() { setEnded(false); setStarted(true); reset(); setTimeout(play, 50); }
 
-  // ── Background interpolation per act ─────────────────────────────────────
+  const fade  = (a: number, b: number) => eo(p(t, a, b));
+  const slideR = (a: number, b: number, dist = 40) => ({ transform: `translateX(${lr(dist, 0, eo(p(t, a, b)))}px)` });
+  const slideL = (a: number, b: number, dist = 40) => ({ transform: `translateX(${lr(-dist, 0, eo(p(t, a, b)))}px)` });
+  const slideU = (a: number, b: number, dist = 24) => ({ transform: `translateY(${lr(dist, 0, eo(p(t, a, b)))}px)` });
+
+  // ── Background ────────────────────────────────────────────────────────
   let bg: string;
-  if      (t < 4)   bg = CHARCOAL;
-  else if (t < 9)   bg = CHARCOAL;
-  else if (t < 15)  bg = CHARCOAL;
-  else if (t < 21)  bg = WHITE;
-  else if (t < 28)  {
-    const q = eio(p(t, 21, 22));
-    bg = `rgb(${lr(255,40,q)|0},${lr(255,40,q)|0},${lr(255,40,q)|0})`;
-    // transition from white to dark overlay
-    bg = t < 22 ? WHITE : `rgba(30,30,40,${Math.min(0.95, (t-21)*0.4)})`;
+  if      (t <= 3)   bg = CHARCOAL;
+  else if (t <= 4)   { const q = eio(p(t,3,4));   bg = `rgb(${lr(40,244,q)|0},${lr(43,244,q)|0},${lr(63,244,q)|0})`; }
+  else if (t <= 10)  bg = WHITE;
+  else if (t <= 11)  { const q = eio(p(t,10,11)); bg = `rgb(${lr(244,40,q)|0},${lr(244,43,q)|0},${lr(244,63,q)|0})`; }
+  else if (t <= 21)  bg = CHARCOAL;
+  else if (t <= 22)  { const q = eio(p(t,21,22)); bg = `rgb(${lr(40,244,q)|0},${lr(43,244,q)|0},${lr(63,244,q)|0})`; }
+  else if (t <= 34)  bg = WHITE;
+  else if (t <= 35)  { const q = eio(p(t,34,35)); bg = `rgb(${lr(244,40,q)|0},${lr(244,43,q)|0},${lr(244,63,q)|0})`; }
+  else if (t <= 44)  bg = CHARCOAL;
+  else               bg = PINK;
+
+  const onLight = (t > 4 && t <= 10) || (t > 22 && t <= 34) || t > 44;
+  const mainTxt = onLight ? CHARCOAL : WHITE;
+  const dimTxt  = onLight ? GREY : "rgba(255,255,255,0.55)";
+  const accentTxt = onLight ? PINK : "#FF8FAB";
+
+  // Phone phase logic — mirrors Blinkit's left/right/center pattern
+  const phaseA = t > 11  && t <= 16; // home + strip — center entrance
+  const phaseB = t > 16  && t <= 21; // home + strip — LEFT
+  const phaseC = t > 22  && t <= 28; // wishlist grid — RIGHT
+  const phaseD = t > 29  && t <= 34; // verdict sheet — LEFT
+  const phaseE = t > 35  && t <= 43; // verdict + ask — RIGHT
+
+  const pA  = eo(p(t, 11, 13.5));    // zoom in from far
+  const pB  = eo(p(t, 16, 17.5));    // slide left
+  const pBx = ei(p(t, 20, 21));      // exit B
+  const pC  = eo(p(t, 22, 23.5));    // slide right
+  const pCx = ei(p(t, 27.2, 28));    // exit C
+  const pD  = eo(p(t, 29, 30.5));    // slide left
+  const pDx = ei(p(t, 33.2, 34));    // exit D
+  const pE  = eo(p(t, 35, 36.5));    // slide right
+  const pEx = ei(p(t, 42.2, 43));    // exit E
+
+  let phoneLeft: string, phoneTop: string, phoneOpacity: number, phoneScale: number;
+  let phoneScreen: "home" | "wishlist" | "verdict" | "verdict-ask" = "home";
+
+  if (phaseA) {
+    phoneLeft = "50%"; phoneTop = `${50 + lr(15,0,pA)}%`;
+    phoneScale = lr(0.06, 1, pA); phoneOpacity = pA;
+    phoneScreen = "home";
+  } else if (phaseB) {
+    phoneLeft = `${lr(50, 30, pB)}%`; phoneTop = "50%";
+    phoneOpacity = pBx > 0 ? (1 - pBx) : 1; phoneScale = 1;
+    phoneScreen = "home";
+  } else if (phaseC) {
+    phoneLeft = `${lr(50, 70, pC)}%`; phoneTop = "50%";
+    phoneOpacity = pCx > 0 ? (1 - pCx) : 1; phoneScale = 1;
+    phoneScreen = "wishlist";
+  } else if (phaseD) {
+    phoneLeft = `${lr(50, 30, pD)}%`; phoneTop = "50%";
+    phoneOpacity = pDx > 0 ? (1 - pDx) : 1; phoneScale = 1;
+    phoneScreen = "verdict";
+  } else if (phaseE) {
+    phoneLeft = `${lr(50, 70, pE)}%`; phoneTop = "50%";
+    phoneOpacity = pEx > 0 ? (1 - pEx) : 1; phoneScale = 1;
+    phoneScreen = "verdict-ask";
+  } else {
+    phoneLeft = "50%"; phoneTop = "50%"; phoneOpacity = 0; phoneScale = 1;
+    phoneScreen = "home";
   }
-  else if (t < 34)  bg = WHITE;
-  else if (t < 42)  bg = CHARCOAL;
-  else              bg = PINK;
 
-  // Simpler bg logic
-  const bgColor =
-    t >= 42 ? PINK :
-    t >= 34 ? CHARCOAL :
-    t >= 28 ? WHITE :
-    t >= 21 ? "#12121C" :
-    t >= 15 ? WHITE :
-    CHARCOAL;
+  const showPhone = phaseA || phaseB || phaseC || phaseD || phaseE;
 
-  const onDark = bgColor === CHARCOAL || bgColor === "#12121C";
-  const onPink = bgColor === PINK;
-  const mainText = (onDark || onPink) ? WHITE : CHARCOAL;
-  const subText  = onDark ? "rgba(255,255,255,0.6)" : onPink ? "rgba(255,255,255,0.8)" : GREY_TEXT;
-
-  // ── Act helpers ───────────────────────────────────────────────────────────
-  const fade = (a: number, b: number) => p(t, a, b);
-  const slideUp = (a: number, b: number, dist = 24) => ({
-    transform: `translateY(${lr(dist, 0, eo(p(t, a, b)))}px)`,
-  });
-
-  // ── Pre-start screen ──────────────────────────────────────────────────────
-  if (!started) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: CHARCOAL,
-          display: "flex",
-          flexDirection: "column" as const,
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: FONT,
-          gap: 24,
-          padding: 24,
-          textAlign: "center" as const,
-        }}
-      >
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: 16,
-            background: PINK,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontFamily: FONT,
-            fontWeight: 900,
-            fontSize: 32,
-            color: WHITE,
-          }}
-        >
-          M
+  // ── Pre-start screen ──────────────────────────────────────────────────
+  if (!started) return (
+    <div style={{ width:"100vw", height:"100vh", background:CHARCOAL, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:32, fontFamily:FONT, userSelect:"none", textAlign:"center", padding:24 }}>
+      <img src="/myntra-logo.png" alt="Myntra" style={{ height:44, objectFit:"contain" }}/>
+      <div>
+        <div style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.4)", letterSpacing:3, textTransform:"uppercase", marginBottom:16 }}>
+          Wishlist Confidence Engine · NextLeap PM Fellowship 2026
         </div>
-        <div>
-          <h1 style={{ fontFamily: FONT, fontSize: 26, fontWeight: 700, color: WHITE, margin: "0 0 8px" }}>
-            Wishlist Confidence Engine
-          </h1>
-          <p style={{ fontFamily: FONT, fontSize: 14, color: "rgba(255,255,255,0.6)", margin: 0 }}>
-            50-second product story · No audio
-          </p>
-        </div>
-        <button
-          onClick={handleStart}
-          style={{
-            background: PINK,
-            color: WHITE,
-            border: "none",
-            borderRadius: 50,
-            padding: "14px 40px",
-            fontFamily: FONT,
-            fontSize: 16,
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
-          Play
-        </button>
+        <div style={{ fontSize:54, fontWeight:900, color:WHITE, letterSpacing:-2.5, lineHeight:1.05 }}>Introducing</div>
+        <div style={{ fontSize:54, fontWeight:900, color:PINK, letterSpacing:-2.5, lineHeight:1.05 }}>Wishlist Confidence Engine.</div>
       </div>
-    );
-  }
+      <button onClick={handleStart} style={{ background:PINK, border:"none", borderRadius:50, color:"#fff", fontSize:16, fontWeight:700, padding:"15px 44px", cursor:"pointer", fontFamily:FONT }}>
+        Watch the promo
+      </button>
+      <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)" }}>50 seconds · no audio</div>
+    </div>
+  );
+
+  if (ended) return (
+    <div style={{ width:"100vw", height:"100vh", background:PINK, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:28, fontFamily:FONT, textAlign:"center" }}>
+      <img src="/myntra-logo.png" alt="Myntra" style={{ height:40, objectFit:"contain", filter:"brightness(0) invert(1)" }}/>
+      <div>
+        <div style={{ fontSize:52, fontWeight:900, color:WHITE, letterSpacing:-2.5, marginBottom:8 }}>Wishlist Confidence Engine.</div>
+        <div style={{ fontSize:16, color:"rgba(255,255,255,0.7)", letterSpacing:1 }}>NextLeap PM Fellowship · 2026</div>
+        <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginTop:6 }}>Shiwang Tiwari · d3-myntra.vercel.app</div>
+      </div>
+      <button onClick={handleReplay} style={{ background:"transparent", border:"2px solid rgba(255,255,255,0.4)", borderRadius:50, color:"rgba(255,255,255,0.8)", fontSize:13, fontWeight:600, padding:"12px 32px", cursor:"pointer", fontFamily:FONT }}>
+        Watch again
+      </button>
+    </div>
+  );
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#0A0A12",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        overflow: "hidden",
-        position: "relative" as const,
-      }}
-    >
-      {/* Landscape hint — mobile landscape only */}
-      {isLandscape && window.innerWidth < 900 && <LandscapeHint />}
+    <div style={{
+      width:"100vw", height:"100vh", background:"#0A0A14",
+      overflow:"hidden", position:"relative",
+      display:"flex", alignItems:"center", justifyContent:"center",
+    }}>
+      {portrait && <PortraitHint/>}
+      {/* ── Scaled canvas ──────────────────────────────────────────────── */}
+      <div style={{
+        width: DW, height: DH,
+        position:"relative", overflow:"hidden",
+        flexShrink: 0,
+        transform: `scale(${scale})`,
+        transformOrigin: "center center",
+        background: bg,
+        transition: "background 0.4s",
+        fontFamily: FONT,
+        userSelect: "none",
+      }}>
 
-      {/* Scaled viewport container */}
-      <div
-        style={{
-          width: DESIGN_W,
-          height: DESIGN_H,
-          transform: `scale(${scale})`,
-          transformOrigin: "center center",
-          position: "relative" as const,
-          overflow: "hidden",
-          borderRadius: 40,
-          background: bgColor,
-          transition: "background 0.4s",
-        }}
-      >
-        {/* ── ACT 1: 0–4s — THE PROBLEM ─────────────────────────────────── */}
-        {t >= 0 && t < 9 && (
-          <div
-            style={{
-              position: "absolute" as const,
-              inset: 0,
-              display: "flex",
-              flexDirection: "column" as const,
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "0 36px",
-              textAlign: "center" as const,
-              zIndex: 2,
-            }}
-          >
-            {/* Myntra M pulsing */}
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 14,
-                background: PINK,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: FONT,
-                fontWeight: 900,
-                fontSize: 28,
-                color: WHITE,
-                marginBottom: 28,
-                transform: `scale(${1 + 0.06 * Math.sin(t * 4)})`,
-                opacity: eo(p(t, 0, 0.8)),
-              }}
-            >
-              M
-            </div>
-            <div
-              style={{
-                fontFamily: FONT,
-                fontSize: 38,
-                fontWeight: 800,
-                color: WHITE,
-                lineHeight: 1.2,
-                letterSpacing: "-0.02em",
-                opacity: eo(p(t, 0.3, 1.5)),
-                ...slideUp(0.3, 1.5),
-              }}
-            >
-              Your wishlist.
-              <br />
-              <span style={{ color: PINK }}>315 items.</span>
-            </div>
-            <div
-              style={{
-                fontFamily: FONT,
-                fontSize: 18,
-                color: "rgba(255,255,255,0.65)",
-                marginTop: 16,
-                lineHeight: 1.5,
-                opacity: eo(p(t, 1.5, 2.8)),
-                ...slideUp(1.5, 2.8),
-              }}
-            >
-              Most will never be purchased.
-            </div>
-          </div>
-        )}
+        {/* ── BEAT 1: 0-1s Zoom "Wishlist" ─────────────────────────────── */}
+        {t <= 1 && <ZoomWord word="Wishlist." t={t} startAt={0} endAt={0.8} color={WHITE} bg={CHARCOAL} />}
+        {/* ── BEAT 2: 1-2s Zoom "315 items." ──────────────────────────── */}
+        {t > 1 && t <= 2 && <ZoomWord word="315 items." t={t} startAt={1} endAt={1.8} color={WHITE} bg={CHARCOAL} />}
+        {/* ── BEAT 3: 2-3s "Never purchased." ─────────────────────────── */}
+        {t > 2 && t <= 3 && <ZoomWord word="Never." sub="Most will never be purchased." t={t} startAt={2} endAt={2.8} color={WHITE} accent={PINK} bg={CHARCOAL} />}
 
-        {/* ── ACT 2: 4–9s — THE BROKEN MOMENT ─────────────────────────── */}
-        {t >= 4 && t < 9 && (
-          <div
-            style={{
-              position: "absolute" as const,
-              inset: 0,
-              display: "flex",
-              flexDirection: "column" as const,
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "0 36px",
-              textAlign: "center" as const,
-              zIndex: 3,
-              background: CHARCOAL,
-              opacity: eo(p(t, 4, 5)),
-            }}
-          >
-            <div
-              style={{
-                fontFamily: FONT,
-                fontSize: 20,
-                color: "rgba(255,255,255,0.7)",
-                marginBottom: 24,
-                opacity: eo(p(t, 4.3, 5.5)),
-              }}
-            >
-              Every time you return...
+        {/* ── BEAT 4-5: 3-10s — Light bg, stat center ──────────────────── */}
+        {t > 4 && t <= 10 && (
+          <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
+            <div style={{ fontSize:13, fontWeight:700, color:PINK, letterSpacing:3, textTransform:"uppercase", marginBottom:20, opacity:fade(4.2,5) }}>The problem</div>
+            <div style={{ display:"flex", alignItems:"baseline", gap:8, opacity:fade(4.5,5.8), transform:`scale(${lr(1.4,1,eo(p(t,4.5,5.8)))})` }}>
+              <span style={{ fontSize:180, fontWeight:900, color:CHARCOAL, letterSpacing:-8, lineHeight:1 }}>65</span>
+              <span style={{ fontSize:80, fontWeight:900, color:PINK }}>%</span>
             </div>
-
-            {/* Wishlist card slides in */}
-            <div
-              style={{
-                opacity: eo(p(t, 4.6, 5.8)),
-                transform: `translateX(${lr(60, 0, eo(p(t, 4.6, 5.8)))}px)`,
-              }}
-            >
-              <WishlistCard greyed={t > 7} />
-            </div>
-
-            <div
-              style={{
-                fontFamily: FONT,
-                fontSize: 15,
-                color: "rgba(255,255,255,0.5)",
-                marginTop: 18,
-                lineHeight: 1.5,
-                opacity: eo(p(t, 7.2, 8.2)),
-              }}
-            >
-              No new signal. No reason to decide.
-            </div>
-          </div>
-        )}
-
-        {/* ── ACT 3: 9–15s — THE WORKAROUND ───────────────────────────── */}
-        {t >= 9 && t < 15 && (
-          <div
-            style={{
-              position: "absolute" as const,
-              inset: 0,
-              display: "flex",
-              flexDirection: "column" as const,
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "0 32px",
-              zIndex: 4,
-              background: CHARCOAL,
-              opacity: eo(p(t, 9, 9.8)),
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                gap: 20,
-                marginBottom: 24,
-                alignItems: "center",
-              }}
-            >
-              {/* Faded wishlist card */}
-              <div style={{ opacity: lr(0.9, 0.2, eo(p(t, 9.5, 11))) }}>
-                <WishlistCard greyed />
-              </div>
-            </div>
-
-            {/* Icons appearing one by one */}
-            <div style={{ display: "flex", gap: 20, marginBottom: 20 }}>
-              {/* YouTube */}
-              <div style={{ opacity: eo(p(t, 10, 11)), textAlign: "center" as const }}>
-                <div style={{ fontSize: 36, marginBottom: 4 }}>📺</div>
-                <div style={{ fontFamily: FONT, fontSize: 11, color: "#FF4444" }}>YouTube</div>
-              </div>
-              {/* Amazon */}
-              <div style={{ opacity: eo(p(t, 10.8, 11.8)), textAlign: "center" as const }}>
-                <div style={{ fontSize: 36, marginBottom: 4 }}>🛒</div>
-                <div style={{ fontFamily: FONT, fontSize: 11, color: "#FF9900" }}>Amazon</div>
-              </div>
-              {/* WhatsApp */}
-              <div style={{ opacity: eo(p(t, 11.6, 12.6)), textAlign: "center" as const }}>
-                <div style={{ fontSize: 36, marginBottom: 4 }}>💬</div>
-                <div style={{ fontFamily: FONT, fontSize: 11, color: "#25D366" }}>Friends</div>
-              </div>
-            </div>
-
-            {/* Counter */}
-            <div
-              style={{
-                textAlign: "center" as const,
-                opacity: eo(p(t, 12, 13)),
-              }}
-            >
-              <div style={{ fontFamily: FONT, fontSize: 56, fontWeight: 800, color: WHITE, lineHeight: 1 }}>
-                <RollingNumber t={t} triggerAt={12} dur={1.5} from={0} to={65} />%
-              </div>
-              <div style={{ fontFamily: FONT, fontSize: 15, color: "rgba(255,255,255,0.65)", marginTop: 8 }}>
-                leave the app to find answers
-              </div>
-              <div
-                style={{
-                  fontFamily: FONT,
-                  fontSize: 13,
-                  color: "rgba(255,255,255,0.4)",
-                  marginTop: 8,
-                  lineHeight: 1.5,
-                  opacity: eo(p(t, 13.2, 14.2)),
-                }}
-              >
-                Every one of them is a purchase Myntra did not get.
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── ACT 4: 15–21s — THE STRIP ────────────────────────────────── */}
-        {t >= 15 && t < 21 && (
-          <div
-            style={{
-              position: "absolute" as const,
-              inset: 0,
-              display: "flex",
-              flexDirection: "column" as const,
-              alignItems: "center",
-              justifyContent: "flex-start",
-              padding: "0",
-              zIndex: 5,
-              background: WHITE,
-              opacity: eo(p(t, 15, 15.8)),
-            }}
-          >
-            {/* Search bar */}
-            <div
-              style={{
-                width: "100%",
-                background: CHARCOAL,
-                padding: "48px 16px 12px",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              <div
-                style={{
-                  flex: 1,
-                  background: WHITE,
-                  borderRadius: 8,
-                  padding: "10px 14px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                }}
-              >
-                <span style={{ fontSize: 14 }}>🔍</span>
-                <span style={{ fontFamily: FONT, fontSize: 13, color: "#BBBCC0" }}>
-                  Search for products, brands and more
-                </span>
-              </div>
-            </div>
-
-            {/* Strip card sliding in */}
-            <div
-              style={{
-                padding: "16px",
-                width: "100%",
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: FONT,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: GREY_TEXT,
-                  textTransform: "uppercase" as const,
-                  letterSpacing: "0.06em",
-                  marginBottom: 10,
-                }}
-              >
-                From your wishlist
-              </div>
-              <div
-                style={{
-                  opacity: eo(p(t, 15.5, 16.5)),
-                  transform: `translateX(${lr(60, 0, eo(p(t, 15.5, 16.5)))}px)`,
-                }}
-              >
-                <StripCard />
-              </div>
-
-              {/* Arrow annotation */}
-              <div
-                style={{
-                  marginTop: 12,
-                  opacity: eo(p(t, 17, 18)),
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                <span style={{ fontSize: 20 }}>☝️</span>
-                <span style={{ fontFamily: FONT, fontSize: 13, color: GREY_TEXT, lineHeight: 1.4 }}>
-                  The strip finds you. Before you open YouTube.
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── ACT 5: 21–28s — THE CONFIDENCE ENGINE ───────────────────── */}
-        {t >= 21 && t < 28 && (
-          <div
-            style={{
-              position: "absolute" as const,
-              inset: 0,
-              background: "#12121C",
-              zIndex: 6,
-              opacity: eo(p(t, 21, 21.8)),
-            }}
-          >
-            {/* Label */}
-            <div
-              style={{
-                padding: "52px 20px 16px",
-                fontFamily: FONT,
-                fontSize: 13,
-                color: "rgba(255,255,255,0.5)",
-                opacity: eo(p(t, 21.5, 22.5)),
-              }}
-            >
-              Your question. Answered. Inside Myntra.
-            </div>
-
-            {/* Bottom sheet */}
-            <div
-              style={{
-                opacity: eo(p(t, 21.8, 22.8)),
-                transform: `translateY(${lr(120, 0, eo(p(t, 21.8, 22.8)))}px)`,
-              }}
-            >
-              <ConfidenceSheet askVisible={t > 25} />
-            </div>
-          </div>
-        )}
-
-        {/* ── ACT 6: 28–34s — THE JOURNEY ──────────────────────────────── */}
-        {t >= 28 && t < 34 && (
-          <div
-            style={{
-              position: "absolute" as const,
-              inset: 0,
-              background: WHITE,
-              display: "flex",
-              flexDirection: "column" as const,
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "0 32px",
-              zIndex: 7,
-              opacity: eo(p(t, 28, 28.8)),
-            }}
-          >
-            <div
-              style={{
-                fontFamily: FONT,
-                fontSize: 13,
-                color: GREY_TEXT,
-                marginBottom: 28,
-                opacity: eo(p(t, 28.5, 29.5)),
-              }}
-            >
-              5 taps. No wishlist page needed. No app-switching.
-            </div>
-
-            {/* 5 steps */}
-            <div style={{ display: "flex", flexDirection: "column" as const, gap: 12, width: "100%" }}>
+            <div style={{ fontSize:28, color:GREY, marginTop:16, opacity:fade(6,7) }}>of Myntra wishlist users leave the app to decide</div>
+            <div style={{ fontSize:20, color:GREY, marginTop:12, opacity:fade(7.2,8.2), lineHeight:1.5 }}>YouTube. Amazon. WhatsApp friends.<br/>Every exit is a purchase Myntra did not get.</div>
+            <div style={{ marginTop:24, display:"flex", gap:20, opacity:fade(8.4,9.2) }}>
               {[
-                { n: 1, label: "Open app",       delay: 29 },
-                { n: 2, label: "See strip",       delay: 29.8 },
-                { n: 3, label: "Read verdict",    delay: 30.6 },
-                { n: 4, label: "Ask question",    delay: 31.4 },
-                { n: 5, label: "Add to Bag",      delay: 32.2 },
-              ].map(({ n, label, delay }) => (
-                <div
-                  key={n}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                    opacity: eo(p(t, delay, delay + 0.7)),
-                    transform: `translateX(${lr(-20, 0, eo(p(t, delay, delay + 0.7)))}px)`,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      background: PINK,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontFamily: FONT,
-                      fontWeight: 800,
-                      fontSize: 16,
-                      color: WHITE,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {n}
-                  </div>
-                  <span style={{ fontFamily: FONT, fontSize: 16, fontWeight: 600, color: CHARCOAL }}>
-                    {label}
-                  </span>
+                { src:"/products/oquent/card.png" },
+                { src:"/products/denimlook/card.png" },
+                { src:"/products/kooknkeech/card.png" },
+                { src:"/products/pepejeans/card.png" },
+              ].map((img,i) => (
+                <div key={i} style={{ width:76, height:96, borderRadius:10, overflow:"hidden", border:`2px solid ${BORDER}`, opacity:1-i*0.1 }}>
+                  <img src={img.src} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"top" }}/>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* ── ACT 7: 34–42s — THE SCALE ────────────────────────────────── */}
-        {t >= 34 && t < 42 && (
-          <div
-            style={{
-              position: "absolute" as const,
-              inset: 0,
-              background: CHARCOAL,
-              display: "flex",
-              flexDirection: "column" as const,
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "0 32px",
-              zIndex: 8,
-              opacity: eo(p(t, 34, 34.8)),
-            }}
-          >
-            {/* Stat 1: 50M+ users */}
-            {t >= 34.5 && (
-              <div
-                style={{
-                  textAlign: "center" as const,
-                  marginBottom: t >= 37.5 ? 24 : 0,
-                  opacity: t >= 37.5 ? lr(1, 0.4, eo(p(t, 37.5, 38.2))) : eo(p(t, 34.5, 35.5)),
-                  transform: `translateY(${lr(20, 0, eo(p(t, 34.5, 35.5)))}px)`,
-                }}
-              >
-                <div style={{ fontFamily: FONT, fontSize: 52, fontWeight: 800, color: PINK, lineHeight: 1 }}>
-                  50M+
-                </div>
-                <div style={{ fontFamily: FONT, fontSize: 15, color: "rgba(255,255,255,0.7)", marginTop: 6 }}>
-                  monthly active users
-                </div>
-              </div>
-            )}
-
-            {/* Stat 2: 28.3% save and forget */}
-            {t >= 36.5 && (
-              <div
-                style={{
-                  textAlign: "center" as const,
-                  marginBottom: t >= 39.5 ? 24 : 0,
-                  opacity: t >= 39.5 ? lr(1, 0.4, eo(p(t, 39.5, 40.2))) : eo(p(t, 36.5, 37.5)),
-                  transform: `translateY(${lr(20, 0, eo(p(t, 36.5, 37.5)))}px)`,
-                }}
-              >
-                <div style={{ fontFamily: FONT, fontSize: 52, fontWeight: 800, color: PINK, lineHeight: 1 }}>
-                  28.3%
-                </div>
-                <div style={{ fontFamily: FONT, fontSize: 15, color: "rgba(255,255,255,0.7)", marginTop: 6 }}>
-                  save and forget
-                </div>
-              </div>
-            )}
-
-            {/* Stat 3: 65% leave to decide */}
-            {t >= 38.5 && (
-              <div
-                style={{
-                  textAlign: "center" as const,
-                  opacity: eo(p(t, 38.5, 39.5)),
-                  transform: `translateY(${lr(20, 0, eo(p(t, 38.5, 39.5)))}px)`,
-                }}
-              >
-                <div style={{ fontFamily: FONT, fontSize: 52, fontWeight: 800, color: PINK, lineHeight: 1 }}>
-                  65%
-                </div>
-                <div style={{ fontFamily: FONT, fontSize: 15, color: "rgba(255,255,255,0.7)", marginTop: 6 }}>
-                  leave to decide
-                </div>
-              </div>
-            )}
-
-            {/* Punchline */}
-            {t >= 40 && (
-              <div
-                style={{
-                  textAlign: "center" as const,
-                  marginTop: 24,
-                  opacity: eo(p(t, 40, 41)),
-                  transform: `translateY(${lr(16, 0, eo(p(t, 40, 41)))}px)`,
-                }}
-              >
-                <div style={{ fontFamily: FONT, fontSize: 14, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
-                  Three problems. One surface. No new users required.
-                </div>
-              </div>
-            )}
+        {/* ── BEATS 11-21: Dark, phone left + text right ────────────────── */}
+        {/* B6: 11-16 phone intro center */}
+        {t > 11 && t <= 16 && (
+          <div style={{ position:"absolute", left:"52%", top:"50%", transform:"translateY(-50%)", maxWidth:"42%", zIndex:3 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:accentTxt, letterSpacing:3, textTransform:"uppercase", marginBottom:14, opacity:fade(13.5,14.5), ...slideR(13.5,14.5) }}>The feature</div>
+            <div style={{ fontSize:68, fontWeight:900, color:mainTxt, letterSpacing:-3, lineHeight:1.1, marginBottom:16, opacity:fade(13.5,14.8), ...slideR(13.5,14.8) }}>
+              The strip<br/>finds you.
+            </div>
+            <div style={{ fontSize:24, color:dimTxt, lineHeight:1.6, opacity:fade(14.8,16) }}>Home screen. Every app open.<br/>No wishlist visit needed.</div>
           </div>
         )}
 
-        {/* ── ACT 8: 42–50s — THE CLOSE ────────────────────────────────── */}
-        {t >= 42 && (
-          <div
-            style={{
-              position: "absolute" as const,
-              inset: 0,
-              background: PINK,
-              display: "flex",
-              flexDirection: "column" as const,
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "0 32px",
-              zIndex: 9,
-              opacity: eo(p(t, 42, 43)),
-            }}
-          >
-            {/* Myntra M */}
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 16,
-                background: WHITE,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: FONT,
-                fontWeight: 900,
-                fontSize: 32,
-                color: PINK,
-                marginBottom: 24,
-                opacity: eo(p(t, 42.5, 43.5)),
-                transform: `scale(${lr(0.8, 1, eo(p(t, 42.5, 43.5)))})`,
-              }}
-            >
-              M
+        {/* B7: 16-21 phone left, text right */}
+        {t > 16 && t <= 21 && (
+          <div style={{ position:"absolute", left:"52%", top:"50%", transform:"translateY(-50%)", maxWidth:"42%", zIndex:3 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:accentTxt, letterSpacing:3, textTransform:"uppercase", marginBottom:14, opacity:fade(16.5,17.5), ...slideR(16.5,17.5) }}>Always-on</div>
+            <div style={{ fontSize:68, fontWeight:900, color:mainTxt, letterSpacing:-3, lineHeight:1.1, marginBottom:12, opacity:fade(16.5,17.8), ...slideR(16.5,17.8) }}>
+              28.3% save<br/>and forget.
             </div>
+            <div style={{ fontSize:22, color:dimTxt, lineHeight:1.6, opacity:fade(18,19) }}>The strip catches them before<br/>they leave. Before they forget.</div>
+            <div style={{ fontSize:18, color:accentTxt, marginTop:12, opacity:fade(19.2,20) }}>→ 74 buyers your size bought this</div>
+          </div>
+        )}
 
-            <div
-              style={{
-                fontFamily: FONT,
-                fontSize: 30,
-                fontWeight: 800,
-                color: WHITE,
-                textAlign: "center" as const,
-                lineHeight: 1.2,
-                letterSpacing: "-0.01em",
-                marginBottom: 14,
-                opacity: eo(p(t, 43, 44)),
-                transform: `translateY(${lr(16, 0, eo(p(t, 43, 44)))}px)`,
-              }}
-            >
-              Wishlist Confidence Engine
+        {/* ── BEATS 22-34: Light bg, phone right ───────────────────────── */}
+        {/* B8: 22-28 wishlist grid — phone right, text LEFT */}
+        {t > 22 && t <= 28 && (
+          <div style={{ position:"absolute", right:"52%", top:"50%", transform:"translateY(-50%)", maxWidth:"42%", zIndex:3 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:PINK, letterSpacing:3, textTransform:"uppercase", marginBottom:14, opacity:fade(23.5,24.5), ...slideL(23.5,24.5) }}>The wishlist</div>
+            <div style={{ fontSize:68, fontWeight:900, color:CHARCOAL, letterSpacing:-3, lineHeight:1.1, marginBottom:16, opacity:fade(23.5,24.8), ...slideL(23.5,24.8) }}>
+              315 items.<br/>One decision.
             </div>
+            <div style={{ fontSize:22, color:GREY, lineHeight:1.6, opacity:fade(25,26) }}>The Confidence Engine reads<br/>2,083 buyer reviews for you.</div>
+            <div style={{ fontSize:18, color:PINK, marginTop:14, opacity:fade(26.2,27.2), fontWeight:600 }}>Runs true to size. Breathes well in summer.</div>
+          </div>
+        )}
 
-            <a
-              href="https://d3-myntra.vercel.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                fontFamily: FONT,
-                fontSize: 14,
-                color: WHITE,
-                textDecoration: "underline",
-                opacity: eo(p(t, 44, 45)),
-                transform: `translateY(${lr(12, 0, eo(p(t, 44, 45)))}px)`,
-                display: "inline-block",
-              }}
-            >
-              d3-myntra.vercel.app
-            </a>
+        {/* B9: 29-34 verdict sheet — phone left, text RIGHT */}
+        {t > 29 && t <= 34 && (
+          <div style={{ position:"absolute", left:"52%", top:"50%", transform:"translateY(-50%)", maxWidth:"42%", zIndex:3 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:PINK, letterSpacing:3, textTransform:"uppercase", marginBottom:14, opacity:fade(30.5,31.5), ...slideR(30.5,31.5) }}>AI Buyer Verdict</div>
+            <div style={{ fontSize:62, fontWeight:900, color:CHARCOAL, letterSpacing:-2.5, lineHeight:1.1, marginBottom:16, opacity:fade(30.5,31.8), ...slideR(30.5,31.8) }}>
+              2,083 reviews.<br/>One verdict.
+            </div>
+            <div style={{ fontSize:22, color:GREY, lineHeight:1.6, opacity:fade(32,33) }}>Distilled in seconds.<br/>Delivered in the app.</div>
+          </div>
+        )}
+
+        {/* ── BEATS 35-44: Dark bg, phone right + ask ──────────────────── */}
+        {/* B10: 35-43 verdict+ask — phone right, text LEFT */}
+        {t > 35 && t <= 43 && (
+          <div style={{ position:"absolute", right:"52%", top:"50%", transform:"translateY(-50%)", maxWidth:"42%", zIndex:3 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:accentTxt, letterSpacing:3, textTransform:"uppercase", marginBottom:14, opacity:fade(36.5,37.5), ...slideL(36.5,37.5) }}>Ask anything</div>
+            <div style={{ fontSize:62, fontWeight:900, color:mainTxt, letterSpacing:-2.5, lineHeight:1.1, marginBottom:12, opacity:fade(36.5,37.8), ...slideL(36.5,37.8) }}>
+              Your question.<br/>Answered.
+            </div>
+            <div style={{ fontSize:22, color:dimTxt, lineHeight:1.6, opacity:fade(38,39) }}>Inside Myntra.<br/>No app-switching.</div>
+            <div style={{ marginTop:18, opacity:fade(39.5,40.5) }}>
+              <div style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"14px", background:"rgba(3,166,133,0.12)", border:"1px solid rgba(3,166,133,0.3)", borderRadius:12 }}>
+                <div style={{ width:3, background:GREEN, borderRadius:2, alignSelf:"stretch" }}/>
+                <div>
+                  <div style={{ fontSize:13, color:dimTxt, marginBottom:4, fontStyle:"italic" }}>Will this work for office?</div>
+                  <div style={{ fontSize:15, fontWeight:600, color:GREEN, lineHeight:1.5 }}>Yes — 68% of buyers in formal settings kept it.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── BEAT 11: 44-50 End card — pink ────────────────────────────── */}
+        {t > 44 && (
+          <div style={{ position:"absolute", inset:0, background:PINK, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:20, zIndex:10 }}>
+            <div style={{ opacity:eo(p(t,44.2,45.5)), transform:`scale(${lr(0.85,1,eo(p(t,44.2,45.5)))})` }}>
+              <img src="/myntra-logo.png" alt="Myntra" style={{ height:52, objectFit:"contain", filter:"brightness(0) invert(1)" }}/>
+            </div>
+            <div style={{ fontSize:68, fontWeight:900, color:WHITE, letterSpacing:-3, textAlign:"center", opacity:eo(p(t,45,46)), ...slideU(45,46) }}>
+              Wishlist Confidence Engine.
+            </div>
+            <div style={{ fontSize:22, color:"rgba(255,255,255,0.75)", opacity:eo(p(t,46.2,47.2)) }}>
+              Live at{" "}
+              <a href="https://d3-myntra.vercel.app" target="_blank" rel="noopener noreferrer" style={{ color:WHITE, textDecoration:"underline" }}>
+                d3-myntra.vercel.app
+              </a>
+            </div>
+            <div style={{ fontSize:16, color:"rgba(255,255,255,0.5)", letterSpacing:2, opacity:eo(p(t,47.2,48)) }}>
+              NextLeap PM Fellowship · 2026
+            </div>
+          </div>
+        )}
+
+        {/* ── iPhone shell ──────────────────────────────────────────────── */}
+        {showPhone && (
+          <div style={{
+            position:"absolute",
+            left: phoneLeft, top: phoneTop,
+            transform:`translate(-50%,-50%) scale(${phoneScale})`,
+            opacity: phoneOpacity,
+            willChange:"transform,opacity",
+            zIndex:5,
+          }}>
+            <IPhone>
+              {phoneScreen === "home"         && <HomeWithStrip/>}
+              {phoneScreen === "wishlist"      && <WishlistGrid/>}
+              {phoneScreen === "verdict"       && <VerdictSheet showAsk={false}/>}
+              {phoneScreen === "verdict-ask"   && <VerdictSheet showAsk={true}/>}
+            </IPhone>
           </div>
         )}
 
         {/* ── Progress bar ──────────────────────────────────────────────── */}
-        <div
-          style={{
-            position: "absolute" as const,
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 3,
-            background: "rgba(255,255,255,0.15)",
-            zIndex: 99,
-          }}
-        >
-          <div
-            style={{
-              height: "100%",
-              background: onPink ? "rgba(255,255,255,0.6)" : PINK,
-              width: `${(t / TOTAL) * 100}%`,
-              transition: "width 0.05s linear",
-            }}
-          />
+        <div style={{ position:"absolute", bottom:0, left:0, right:0, height:3, background:"rgba(255,255,255,0.1)", zIndex:99 }}>
+          <div style={{ height:"100%", background: t > 44 ? "rgba(255,255,255,0.5)" : PINK, width:`${(t/TOTAL)*100}%`, transition:"width 0.05s linear" }}/>
         </div>
 
-        {/* ── Replay overlay when ended ────────────────────────────────── */}
-        {ended && (
-          <div
-            style={{
-              position: "absolute" as const,
-              inset: 0,
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "center",
-              padding: "0 0 40px",
-              zIndex: 200,
-            }}
-          >
-            <button
-              onClick={handleReplay}
-              style={{
-                background: WHITE,
-                color: PINK,
-                border: "none",
-                borderRadius: 50,
-                padding: "12px 32px",
-                fontFamily: FONT,
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: "pointer",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
-              }}
-            >
-              Replay
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
