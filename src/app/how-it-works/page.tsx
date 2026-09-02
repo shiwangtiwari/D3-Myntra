@@ -265,7 +265,7 @@ export default function HowItWorks() {
             { title:"Next.js + Vercel",      body:"App Router, server components, API routes. Deployed on Vercel. Zero configuration required to run." },
             { title:"Claude Haiku API",       body:"Server-side API route at /api/verdict. The browser never sees the API key. Same architecture any production feature would use." },
             { title:"Myntra design system",   body:"Pink #FF3F6C, Charcoal #282C3F, DM Sans font. Every screen pixel-matched to the real Myntra app using the actual product images from Shiwang's wishlist." },
-            { title:"The promo is written as code, not recorded as a video", body:"Most project promos are Loom screen recordings exported to MP4. This promo is a webpage. Every transition, every animation, every timed beat is written in React, the same language used to build the app itself. There is no video file, no editing software, no export step. Open /promo2 in any browser and it plays live at 60 frames per second. This is significantly harder to build than pressing record, and it means the promo can never have a broken embed or a buffering screen." },
+            { title:"The promo is written as code, not recorded as a video", body:"Most project promos are Loom screen recordings exported to MP4. This promo is a webpage. Every transition, every animation, every timed beat is written in React, the same language used to build the app itself. There is no video file, no editing software, no export step. Open /promo in any browser and it plays live at 60 frames per second. This is significantly harder to build than pressing record, and it means the promo can never have a broken embed or a buffering screen." },
           ].map(c => (
             <div key={c.title} style={{ background:WHITE, border:`1px solid ${BORDER}`, borderRadius:10, padding:"18px 20px" }}>
               <p style={{ fontFamily:FONT, fontWeight:700, fontSize:13, color:CHARCOAL, marginBottom:6 }}>{c.title}</p>
@@ -290,7 +290,7 @@ export default function HowItWorks() {
         </SectionSubtitle>
 
         <AssetLink href="/" label="Wishlist Confidence Engine · Live MVP" desc="The full interactive prototype. Home screen strip, verdict sheet, Ask panel, Add to Bag." />
-        <AssetLink href="/promo2" label="Feature Promo" desc="Product story built as code in React. User journey walkthrough. All 5 screens fanned out at the end." />
+        <AssetLink href="/promo" label="Feature Promo" desc="Product story built as code in React. User journey walkthrough. All 5 screens fanned out at the end." />
         <AssetLink href="/rice" label="RICE Prioritisation" desc="Three solutions evaluated. Winner: 121.5. Runner-up: 78.4. Third: 52.5." />
         <AssetLink href="/guesstimate" label="Guesstimate Model" desc="Rs 20.16 Cr monthly incremental GMV. Every input color-coded by source." />
         <AssetLink href="https://d2-myntra-seven.vercel.app" label="D2 Discovery Engine" desc="1,458 signals processed. 355 relevant. Inter-coder agreement disclosed." />
