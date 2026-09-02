@@ -517,7 +517,7 @@ export default function PromoPage() {
       <button onClick={handleStart} style={{ background:PINK, border:"none", borderRadius:50, color:"#fff", fontSize:16, fontWeight:700, padding:"15px 44px", cursor:"pointer", fontFamily:FONT }}>
         Watch the promo
       </button>
-      <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)" }}>50 seconds · with audio</div>
+
     </div>
   );
 
